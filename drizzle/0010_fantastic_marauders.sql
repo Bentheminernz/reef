@@ -1,0 +1,1 @@
+ALTER TABLE `notices` ADD `category` text DEFAULT 'Update' NOT NULL;

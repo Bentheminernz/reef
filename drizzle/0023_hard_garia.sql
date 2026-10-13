@@ -1,0 +1,1 @@
+ALTER TABLE `nintendo_accounts` ADD `permissions_synced_at` integer;

@@ -1,0 +1,1 @@
+ALTER TABLE `presence_sessions` ADD `platform` text DEFAULT 'desktop' NOT NULL;

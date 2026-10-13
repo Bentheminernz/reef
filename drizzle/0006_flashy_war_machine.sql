@@ -1,0 +1,1 @@
+ALTER TABLE `presence_sessions` ADD `splatnet_enabled` integer DEFAULT true NOT NULL;

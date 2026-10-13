@@ -1,0 +1,1 @@
+ALTER TABLE `site_settings` ADD `discord_invite_link` text DEFAULT 'https://discord.gg/bmCyVeF6Vw' NOT NULL;

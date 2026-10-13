@@ -1,0 +1,1 @@
+ALTER TABLE `nintendo_accounts` ADD `current_user_permissions` text;

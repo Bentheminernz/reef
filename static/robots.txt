@@ -1,0 +1,8 @@
+# Allow crawling everything public by default
+User-agent: *
+Disallow: /album
+Disallow: /friends
+Disallow: /notifications
+Disallow: /settings
+
+Sitemap: https://reefpresence.app/sitemap.xml

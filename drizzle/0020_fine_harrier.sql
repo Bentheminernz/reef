@@ -1,0 +1,1 @@
+ALTER TABLE `system_bot_user` ADD `friend_count` integer;

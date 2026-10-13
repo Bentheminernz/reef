@@ -1,0 +1,1 @@
+ALTER TABLE `nintendo_accounts` ADD `bot_friendship_blocked` integer DEFAULT false NOT NULL;

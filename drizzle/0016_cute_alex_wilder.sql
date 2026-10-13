@@ -1,0 +1,1 @@
+ALTER TABLE `nintendo_accounts` ADD `access_nintendo_assets` integer DEFAULT false NOT NULL;

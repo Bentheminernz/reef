@@ -1,0 +1,11 @@
+{
+	"extends": "../tsconfig.json",
+	"compilerOptions": {
+		"paths": {
+			"$lib": ["../src/lib"],
+			"$lib/*": ["../src/lib/*"],
+			"$env/dynamic/private": ["./env-shim.ts"]
+		}
+	},
+	"include": ["./**/*.ts"]
+}
