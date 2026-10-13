@@ -237,11 +237,14 @@ export function buildSplatNetDiscordActivity(
 			// 	setting.vsStages.map((s) => s.name).join('/')
 			// );
 			//
-            setLargeImage(
-                activity,
-                SPLATNET_ASSET_IDS[setting.vsStages[0].id],
-                setting.vsStages.map((stage) => stage.name).join('/')
-			)
+			const stage_image = stageImages.get(setting.vsStages[0].id);
+			if (stage_image) {
+				setLargeImage(
+					activity,
+					stage_image,
+					setting.vsStages.map((stage) => stage.name).join('/')
+				);
+			}
 		}
 
         const mode_image =
