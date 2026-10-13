@@ -35,6 +35,7 @@ const INTERVAL_JITTER_MS = 10_000;
 const SESSION_EXPIRY_MS = 15 * 60 * 1000;
 
 const SYNC_CONCURRENCY = Math.max(1, Number(process.env.PRESENCE_SYNC_CONCURRENCY ?? 8) || 8);
+const BOT_CONCURRENCY = Math.max(1, Number(process.env.PRESENCE_BOT_CONCURRENCY ?? 4) || 4);
 
 type SystemBot = typeof systemBotUser.$inferSelect;
 
@@ -295,7 +296,7 @@ while (true) {
 		const bots = await db.select().from(systemBotUser);
 		summary.bots = bots.length;
 
-		for (const bot of bots) {
+		await forEachWithConcurrency(bots, BOT_CONCURRENCY, async (bot) => {
 			const botStartedAt = Date.now();
 
 			try {
@@ -307,7 +308,7 @@ while (true) {
 				summary.failed += 1;
 				console.error(`[presence-sync] #${run} bot ${bot.naId} failed:`, error);
 			}
-		}
+		});
 
 		console.log(`[presence-sync] #${run} finished in ${Date.now() - startedAt}ms`, summary);
 		pingHealthcheck();
