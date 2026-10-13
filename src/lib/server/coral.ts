@@ -17,6 +17,7 @@ import {
 import { logDataAccess } from '$lib/server/dataAccess';
 import type { GameService } from '$lib/types/game-services';
 import SplatNet3Api, { type SplatNet3AuthData, SplatNet3ErrorResponse } from 'nxapi/splatnet3';
+import cached from '$lib/utils/cached';
 
 type NintendoAccount = typeof nintendoAccount.$inferSelect;
 type SplatnetBotAccount = typeof systemBotUser.$inferSelect;
@@ -300,26 +301,7 @@ export function getCoralMedia(
 	account: NintendoAccount,
 	coral: CoralApi
 ): ReturnType<CoralApi['getMedia']> {
-	const cached = mediaCache.get(account.id);
-
-	if (cached && cached.expiresAt > Date.now()) {
-		return cached.value;
-	}
-
-	const value = coral.getMedia();
-	const entry = {
-		expiresAt: Date.now() + MEDIA_CACHE_TTL,
-		value
-	};
-
-	mediaCache.set(account.id, entry);
-	void value.catch(() => {
-		if (mediaCache.get(account.id) === entry) {
-			mediaCache.delete(account.id);
-		}
-	});
-
-	return value;
+	return cached(mediaCache, account.id, MEDIA_CACHE_TTL, () => coral.getMedia());
 }
 
 export function invalidateCoralMedia(accountId: string): void {
@@ -334,26 +316,7 @@ export function getCoralShowSelf(
 	account: NintendoAccount,
 	coral: CoralApi
 ): ReturnType<CoralApi['getCurrentUser']> {
-	const cached = userCache.get(account.id);
-
-	if (cached && cached.expiresAt > Date.now()) {
-		return cached.value;
-	}
-
-	const value = coral.getCurrentUser();
-	const entry = {
-		expiresAt: Date.now() + USER_CACHED,
-		value
-	};
-
-	userCache.set(account.id, entry);
-	void value.catch(() => {
-		if (userCache.get(account.id) === entry) {
-			userCache.delete(account.id);
-		}
-	});
-
-	return value;
+	return cached(userCache, account.id, USER_CACHED, () => coral.getCurrentUser());
 }
 
 export interface CoralFriendCode {
@@ -424,83 +387,30 @@ export function getCoralWebServices(
 	account: NintendoAccount,
 	coral: CoralApi
 ): Promise<GameService[]> {
-	const cached = webServicesCache.get(account.id);
-
-	if (cached && cached.expiresAt > Date.now()) {
-		return cached.value;
-	}
-
-	const value = coral.getWebServices().then((services) =>
-		services.map((service) => ({
-			id: service.id,
-			uri: service.uri,
-			whiteList: [...service.whiteList],
-			name: service.name,
-			imageUri: service.imageUri
-		}))
+	return cached(webServicesCache, account.id, WEB_SERVICES_CACHE_TTL, () =>
+		coral.getWebServices().then((services) =>
+			services.map((service) => ({
+				id: service.id,
+				uri: service.uri,
+				whiteList: [...service.whiteList],
+				name: service.name,
+				imageUri: service.imageUri
+			}))
+		)
 	);
-	const entry = {
-		expiresAt: Date.now() + WEB_SERVICES_CACHE_TTL,
-		value
-	};
-
-	webServicesCache.set(account.id, entry);
-	void value.catch(() => {
-		if (webServicesCache.get(account.id) === entry) {
-			webServicesCache.delete(account.id);
-		}
-	});
-
-	return value;
 }
 
 export function getCoralFriends(account: NintendoAccount, coral: CoralApi): Promise<Friends_4> {
-	const cached = friendsCache.get(account.id);
-
-	if (cached && cached.expiresAt > Date.now()) {
-		return cached.value;
-	}
-
-	const value = coral.getFriendList();
-	const entry = {
-		expiresAt: Date.now() + FRIENDS_CACHE_TTL,
-		value
-	};
-
-	friendsCache.set(account.id, entry);
-	void value.catch(() => {
-		if (friendsCache.get(account.id) === entry) {
-			friendsCache.delete(account.id);
-		}
-	});
-
-	return value;
+	return cached(friendsCache, account.id, FRIENDS_CACHE_TTL, () => coral.getFriendList());
 }
 
 export function getCoralNotifications(
 	account: NintendoAccount,
 	coral: CoralApi
 ): Promise<Announcements_4> {
-	const cached = notificationsCache.get(account.id);
-
-	if (cached && cached.expiresAt > Date.now()) {
-		return cached.value;
-	}
-
-	const value = coral.getAnnouncements();
-	const entry = {
-		expiresAt: Date.now() + NOTIFICATIONS_CACHE_TTL,
-		value
-	};
-
-	notificationsCache.set(account.id, entry);
-	void value.catch(() => {
-		if (notificationsCache.get(account.id) === entry) {
-			notificationsCache.delete(account.id);
-		}
-	});
-
-	return value;
+	return cached(notificationsCache, account.id, NOTIFICATIONS_CACHE_TTL, () =>
+		coral.getAnnouncements()
+	);
 }
 
 export function clearNotificationsCache(accountId: string): void {

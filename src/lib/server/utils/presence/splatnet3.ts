@@ -28,6 +28,7 @@ import {
 	type SplatNetTimePeriod,
 	type SplatNetVsSetting
 } from '$lib/types/splatnet-monitor';
+import cached from '$lib/utils/cached';
 
 const SPLATOON_3_TITLE_ID = '0100c2500fc20000';
 
@@ -42,39 +43,124 @@ const SPLATNET_ASSET_IDS: Record<string, string> = {
 	'mode-vs-private-1': '1555873567047024721'
 };
 
-
 export const stageImages = new Map<string, string>([
-  ["VnNTdGFnZS0x", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/35f9ca08ccc2bf759774ab2cb886567c117b9287875ca92fb590c1294ddcdc1e_0.png"], // Scorch Gorge
-  ["VnNTdGFnZS0y", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/898e1ae6c737a9d44552c7c81f9b710676492681525c514eadc68a6780aa52af_0.png"], // Eeltail Alley
-  ["VnNTdGFnZS0z", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/8dc2f16d39c630bab40cead5b2485ca3559e829d0d3de0c2232c7a62fefb5fa9_0.png"], // Hagglefish Market
-  ["VnNTdGFnZS00", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/9b1c17b2075479d0397d2fb96efbc6fa3a28900712920e5fe1e9dfc59c6abc5c_0.png"], // Undertow Spillway
-  ["VnNTdGFnZS01", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/f14c2a64e49d243679fc0884af91e1a07dc65600f9b90aefe92d7790dcffb191_0.png"], // Um'ami Ruins
-  ["VnNTdGFnZS02", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/de1f212e9ff0648f36cd3b8e0917ef36b3bd51445159297dcb948f34a09f2f05_0.png"], // Mincemeat Metalworks
-  ["VnNTdGFnZS03", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/cd84d711b47a424334569ac20f33f8e0ab6a652dc07854dcd36508a0081e9034_0.png"], // Brinewater Springs
-  ["VnNTdGFnZS04", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/f70e9f5af477a39ccfab631bfb81c9e2cedb4cd0947fe260847c214a6d23695f_0.png"], // Barnacle & Dime
-  ["VnNTdGFnZS05", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/488017f3ce712fca9fb37d61fe306343054449bb2d2bb1751d95f54a98564cae_0.png"], // Flounder Heights
-  ["VnNTdGFnZS0xMA==", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/1db8ab338b64b464df50e7f9e270e59423ff8caac6f09679a24f1b7acf3a82f3_0.png"], // Hammerhead Bridge
-  ["VnNTdGFnZS0xMQ==", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/b9d8cfa186d197a27e075600a107c99d9e21646d116730f0843e0fff0aaba7dd_0.png"], // Museum d'Alfonsino
-  ["VnNTdGFnZS0xMg==", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/8273118c1ffe1bf6fe031c7d8c9795dab52632c9b76e8e9f01f644ac5ae0ccc0_0.png"], // Mahi-Mahi Resort
-  ["VnNTdGFnZS0xMw==", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/40aba8b36a9439e2d670fde5b3478819ea8a94f9e503b9d783248a5716786f35_0.png"], // Inkblot Art Academy
-  ["VnNTdGFnZS0xNA==", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/48684c69d5c5a4ffaf16b712a4895545a8d01196115d514fc878ce99863bb3e9_0.png"], // Sturgeon Shipyard
-  ["VnNTdGFnZS0xNQ==", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/a8ba96c3dbd015b7bc6ea4fa067245c4e9aee62b6696cb41e02d35139dd21fe7_0.png"], // MakoMart
-  ["VnNTdGFnZS0xNg==", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/61ea801fa4ed32360dcaf83986222ded46a72dbf56194acc6d0cf4659a92ba85_0.png"], // Wahoo World
-  ["VnNTdGFnZS0xNw==", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/7b3cf118bd9f45d141cd6db0ee75b06e697fa83945c7fe1e6f8483de6a591f5f_0.png"], // Humpback Pump Track
-  ["VnNTdGFnZS0xOA==", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/0b7fd997781e03eb9d5bf1875ed070f698afc654f4fe929452c65aa26c0a35fd_0.png"], // Manta Maria
-  ["VnNTdGFnZS0xOQ==", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/4e0e9e2046aff1d635e23946d9f0a461486d2aab349079e551037e426ac82c7a_0.png"], // Crableg Capital
-  ["VnNTdGFnZS0yMA==", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/b65a70eedf129848b9d2b492bb68712abf91a5cbda13131848947fb04c51d665_0.png"], // Shipshape Cargo Co.
-  ["VnNTdGFnZS0yMQ==", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/692365fa7e56cf19cfa403a8546e69cf60fd9ca2171bde66cdaa53dc0e736ac9_0.png"], // Robo ROM-en
-  ["VnNTdGFnZS0yMg==", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/3e468df1f38d6323cc8d9446049696d66e47831e68cd31032502349b11960500_0.png"], // Bluefin Depot
-  ["VnNTdGFnZS0yMw==", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/21ea0549b3d29de56ec20affef8866297929d0defb82a27cd199c9d8dade508c_0.png"], // Marlin Airport
-  ["VnNTdGFnZS0yNA==", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/2ba481293efc554ac217f21b6d56dd08f9d66e72b286f20714abd5ef1520f47a_0.png"], // Lemuria Hub
-  ["VnNTdGFnZS0yNg==", "https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/249c981fdd888e79ada712ddf899bddbead508d71043af3ff96c90a7b5959c73_0.png"], // Urchin Underpass
+	[
+		'VnNTdGFnZS0x',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/35f9ca08ccc2bf759774ab2cb886567c117b9287875ca92fb590c1294ddcdc1e_0.png'
+	], // Scorch Gorge
+	[
+		'VnNTdGFnZS0y',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/898e1ae6c737a9d44552c7c81f9b710676492681525c514eadc68a6780aa52af_0.png'
+	], // Eeltail Alley
+	[
+		'VnNTdGFnZS0z',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/8dc2f16d39c630bab40cead5b2485ca3559e829d0d3de0c2232c7a62fefb5fa9_0.png'
+	], // Hagglefish Market
+	[
+		'VnNTdGFnZS00',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/9b1c17b2075479d0397d2fb96efbc6fa3a28900712920e5fe1e9dfc59c6abc5c_0.png'
+	], // Undertow Spillway
+	[
+		'VnNTdGFnZS01',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/f14c2a64e49d243679fc0884af91e1a07dc65600f9b90aefe92d7790dcffb191_0.png'
+	], // Um'ami Ruins
+	[
+		'VnNTdGFnZS02',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/de1f212e9ff0648f36cd3b8e0917ef36b3bd51445159297dcb948f34a09f2f05_0.png'
+	], // Mincemeat Metalworks
+	[
+		'VnNTdGFnZS03',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/cd84d711b47a424334569ac20f33f8e0ab6a652dc07854dcd36508a0081e9034_0.png'
+	], // Brinewater Springs
+	[
+		'VnNTdGFnZS04',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/f70e9f5af477a39ccfab631bfb81c9e2cedb4cd0947fe260847c214a6d23695f_0.png'
+	], // Barnacle & Dime
+	[
+		'VnNTdGFnZS05',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/488017f3ce712fca9fb37d61fe306343054449bb2d2bb1751d95f54a98564cae_0.png'
+	], // Flounder Heights
+	[
+		'VnNTdGFnZS0xMA==',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/1db8ab338b64b464df50e7f9e270e59423ff8caac6f09679a24f1b7acf3a82f3_0.png'
+	], // Hammerhead Bridge
+	[
+		'VnNTdGFnZS0xMQ==',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/b9d8cfa186d197a27e075600a107c99d9e21646d116730f0843e0fff0aaba7dd_0.png'
+	], // Museum d'Alfonsino
+	[
+		'VnNTdGFnZS0xMg==',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/8273118c1ffe1bf6fe031c7d8c9795dab52632c9b76e8e9f01f644ac5ae0ccc0_0.png'
+	], // Mahi-Mahi Resort
+	[
+		'VnNTdGFnZS0xMw==',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/40aba8b36a9439e2d670fde5b3478819ea8a94f9e503b9d783248a5716786f35_0.png'
+	], // Inkblot Art Academy
+	[
+		'VnNTdGFnZS0xNA==',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/48684c69d5c5a4ffaf16b712a4895545a8d01196115d514fc878ce99863bb3e9_0.png'
+	], // Sturgeon Shipyard
+	[
+		'VnNTdGFnZS0xNQ==',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/a8ba96c3dbd015b7bc6ea4fa067245c4e9aee62b6696cb41e02d35139dd21fe7_0.png'
+	], // MakoMart
+	[
+		'VnNTdGFnZS0xNg==',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/61ea801fa4ed32360dcaf83986222ded46a72dbf56194acc6d0cf4659a92ba85_0.png'
+	], // Wahoo World
+	[
+		'VnNTdGFnZS0xNw==',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/7b3cf118bd9f45d141cd6db0ee75b06e697fa83945c7fe1e6f8483de6a591f5f_0.png'
+	], // Humpback Pump Track
+	[
+		'VnNTdGFnZS0xOA==',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/0b7fd997781e03eb9d5bf1875ed070f698afc654f4fe929452c65aa26c0a35fd_0.png'
+	], // Manta Maria
+	[
+		'VnNTdGFnZS0xOQ==',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/4e0e9e2046aff1d635e23946d9f0a461486d2aab349079e551037e426ac82c7a_0.png'
+	], // Crableg Capital
+	[
+		'VnNTdGFnZS0yMA==',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/b65a70eedf129848b9d2b492bb68712abf91a5cbda13131848947fb04c51d665_0.png'
+	], // Shipshape Cargo Co.
+	[
+		'VnNTdGFnZS0yMQ==',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/692365fa7e56cf19cfa403a8546e69cf60fd9ca2171bde66cdaa53dc0e736ac9_0.png'
+	], // Robo ROM-en
+	[
+		'VnNTdGFnZS0yMg==',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/3e468df1f38d6323cc8d9446049696d66e47831e68cd31032502349b11960500_0.png'
+	], // Bluefin Depot
+	[
+		'VnNTdGFnZS0yMw==',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/21ea0549b3d29de56ec20affef8866297929d0defb82a27cd199c9d8dade508c_0.png'
+	], // Marlin Airport
+	[
+		'VnNTdGFnZS0yNA==',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/2ba481293efc554ac217f21b6d56dd08f9d66e72b286f20714abd5ef1520f47a_0.png'
+	], // Lemuria Hub
+	[
+		'VnNTdGFnZS0yNg==',
+		'https://assets.splatoon3.ink/splatnet/v3/stage_img/icon/high_resolution/249c981fdd888e79ada712ddf899bddbead508d71043af3ff96c90a7b5959c73_0.png'
+	] // Urchin Underpass
 ]);
-
 
 function assetImage(assetName: string): string {
 	return SPLATNET_ASSET_IDS[assetName] ?? assetName;
 }
+
+const SCHEDULES_CACHE_TTL = 5 * 60 * 1000;
+const FEST_VOTING_CACHE_TTL = 5 * 60 * 1000;
+
+const schedulesCache = new Map<
+	string,
+	{ expiresAt: number; value: Promise<StageScheduleResult> }
+>();
+const festVotingStatusCache = new Map<
+	string,
+	{ expiresAt: number; value: Promise<SplatNetFestVotingStatusResult> }
+>();
 
 /**
  * SplatNet 3 presence monitor.
@@ -94,17 +180,28 @@ export class SplatNet3Monitor implements PresenceMonitor {
 	constructor(private readonly api: SplatNet3Api) {}
 
 	async update(): Promise<void> {
-		const [friendsResult, schedulesResult] = await Promise.all([
+		const [friendsResult, schedules] = await Promise.all([
 			this.api.getFriends(),
-			this.api.getSchedules()
+			cached(schedulesCache, this.api.na_country, SCHEDULES_CACHE_TTL, () =>
+				this.api.getSchedules().then((result) => result.data)
+			)
 		]);
 
 		this.friends = new Map(friendsResult.data.friends.nodes.map((friend) => [friend.id, friend]));
-		this.schedules = schedulesResult.data;
+		this.schedules = schedules;
+		this.fest = schedules.currentFest ?? null;
 
-		this.fest = this.schedules.currentFest ?? null;
+		const fest = this.fest;
+
 		this.festVotingStatus =
-			this.fest == null ? null : (await this.api.getFestVotingStatus(this.fest.id)).data;
+			fest == null
+				? null
+				: await cached(
+						festVotingStatusCache,
+						`${this.api.na_country}:${fest.id}`,
+						FEST_VOTING_CACHE_TTL,
+						() => this.api.getFestVotingStatus(fest.id).then((result) => result.data)
+					);
 	}
 
 	async callback(
@@ -239,36 +336,32 @@ export function buildSplatNetDiscordActivity(
 			//
 			const stage_image = stageImages.get(setting.vsStages[0].id);
 			if (stage_image) {
-				setLargeImage(
-					activity,
-					stage_image,
-					setting.vsStages.map((stage) => stage.name).join('/')
-				);
+				setLargeImage(activity, stage_image, setting.vsStages.map((stage) => stage.name).join('/'));
 			}
 		}
 
-        const mode_image =
-            // Need to figure out my own s3 icon server
+		const mode_image =
+			// Need to figure out my own s3 icon server
 			// friend.vsMode.mode === 'FEST' && fest
 			// 	? 'https://fancy.org.uk/api/nxapi/s3/fest-icon?' +
 			// 		new URLSearchParams({
 			// 			id: fest.id,
 			// 			v: '2023060401'
 			// 		}).toString()
-   //              :
-                friend.vsMode.mode === 'REGULAR'
-					? assetImage('mode-vs-regular-2')
-					: friend.vsMode.mode === 'BANKARA'
-						? assetImage('mode-vs-bankara-2')
-						: friend.vsMode.mode === 'FEST'
-							? assetImage('mode-fest-1')
-							: friend.vsMode.mode === 'LEAGUE' // TODO: Fetch League Icon
-								? assetImage('mode-vs-event-1')
-								: friend.vsMode.mode === 'X_MATCH'
-									? assetImage('mode-vs-xmatch-2')
-									: friend.vsMode.mode === 'PRIVATE'
-										? assetImage('mode-vs-private-1')
-										: undefined;
+			//              :
+			friend.vsMode.mode === 'REGULAR'
+				? assetImage('mode-vs-regular-2')
+				: friend.vsMode.mode === 'BANKARA'
+					? assetImage('mode-vs-bankara-2')
+					: friend.vsMode.mode === 'FEST'
+						? assetImage('mode-fest-1')
+						: friend.vsMode.mode === 'LEAGUE' // TODO: Fetch League Icon
+							? assetImage('mode-vs-event-1')
+							: friend.vsMode.mode === 'X_MATCH'
+								? assetImage('mode-vs-xmatch-2')
+								: friend.vsMode.mode === 'PRIVATE'
+									? assetImage('mode-vs-private-1')
+									: undefined;
 
 		if (mode_image) {
 			setSmallImage(activity, mode_image, mode_name ?? friend.vsMode.name);

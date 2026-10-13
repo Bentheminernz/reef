@@ -35,25 +35,26 @@ const INTERVAL_JITTER_MS = 10_000;
 const SESSION_EXPIRY_MS = 15 * 60 * 1000;
 
 const SYNC_CONCURRENCY = Math.max(1, Number(process.env.PRESENCE_SYNC_CONCURRENCY ?? 8) || 8);
+const BOT_CONCURRENCY = Math.max(1, Number(process.env.PRESENCE_BOT_CONCURRENCY ?? 4) || 4);
 
 type SystemBot = typeof systemBotUser.$inferSelect;
 
 interface RunSummary {
-    bots: number;
+	bots: number;
 	// session new
-    published: number;
+	published: number;
 	// session refreshed
-    refreshed: number;
+	refreshed: number;
 	// session ended due to invalid token
-    unpublished: number;
+	unpublished: number;
 	// user is offline
-    offline: number;
+	offline: number;
 	// session skipped because friend was not found
 	skipped: number;
 	// session where already published and unchanged
 	unchanged: number;
 	// session skipped for discord auth
-    reauth: number;
+	reauth: number;
 	// failed presence check
 	failed: number;
 }
@@ -75,8 +76,27 @@ async function forEachWithConcurrency<T>(
 }
 
 async function syncBot(bot: SystemBot, applicationId: string, summary: RunSummary) {
+	// if the script starts getting splatnet ready while fetching friends it reduces overall time
+	const monitorPromise: Promise<SplatNet3Monitor | null> = bot.splatnet3Enabled
+		? getSystemBotSplatnetApi(bot.id)
+				.then(async (api) => {
+					const monitor = new SplatNet3Monitor(api);
+					await monitor.update().catch((error) => {
+						console.error(`[presence-sync] Monitor ${monitor.id} update failed:`, error);
+					});
+					return monitor;
+				})
+				.catch((error) => {
+					console.error(
+						`[presence-sync] Failed to set up SplatNet 3 monitor for bot ${bot.id}:`,
+						error
+					);
+					return null;
+				})
+		: Promise.resolve(null);
+
 	const coral = await getSystemBotCoralApi(bot.id);
-	const friendList = await coral.getFriendList();
+	const [friendList, monitor] = await Promise.all([coral.getFriendList(), monitorPromise]);
 	const friends = new Map(friendList.friends.map((friend) => [friend.nsaId, friend]));
 
 	await db
@@ -84,26 +104,7 @@ async function syncBot(bot: SystemBot, applicationId: string, summary: RunSummar
 		.set({ friendCount: friendList.friends.length })
 		.where(eq(systemBotUser.id, bot.id));
 
-	const monitors: PresenceMonitor[] = [];
-
-	if (bot.splatnet3Enabled) {
-		try {
-			monitors.push(new SplatNet3Monitor(await getSystemBotSplatnetApi(bot.id)));
-		} catch (error) {
-			console.error(
-				`[presence-sync] Failed to set up SplatNet 3 monitor for bot ${bot.id}:`,
-				error
-			);
-		}
-	}
-
-	for (const monitor of monitors) {
-		try {
-			await monitor.update();
-		} catch (error) {
-			console.error(`[presence-sync] Monitor ${monitor.id} update failed:`, error);
-		}
-	}
+	const monitors: PresenceMonitor[] = monitor ? [monitor] : [];
 
 	const sessions = await db
 		.select({
@@ -185,9 +186,9 @@ async function syncBot(bot: SystemBot, applicationId: string, summary: RunSummar
 
 				if (activity != null && monitors.length > 0) {
 					activity = await applyActivityCallbacks(monitors, activity, {
-                        coralFriend: friend,
-                        enabledWebServices: {
-                            splatnet3: session.splatnetEnabled
+						coralFriend: friend,
+						enabledWebServices: {
+							splatnet3: session.splatnetEnabled
 						}
 					});
 				}
@@ -295,7 +296,7 @@ while (true) {
 		const bots = await db.select().from(systemBotUser);
 		summary.bots = bots.length;
 
-		for (const bot of bots) {
+		await forEachWithConcurrency(bots, BOT_CONCURRENCY, async (bot) => {
 			const botStartedAt = Date.now();
 
 			try {
@@ -307,7 +308,7 @@ while (true) {
 				summary.failed += 1;
 				console.error(`[presence-sync] #${run} bot ${bot.naId} failed:`, error);
 			}
-		}
+		});
 
 		console.log(`[presence-sync] #${run} finished in ${Date.now() - startedAt}ms`, summary);
 		pingHealthcheck();
