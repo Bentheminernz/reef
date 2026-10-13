@@ -170,9 +170,7 @@ export function applyActivityStart(
 	const sameGame = currentGameKey != null && currentGameKey === previousGameKey;
 
 	const carriedMs = startedAt instanceof Date ? startedAt.getTime() : NaN;
-	const stale =
-		Number.isNaN(carriedMs) ||
-		Date.now() - carriedMs > MAX_CARRY_MS;
+	const stale = Number.isNaN(carriedMs) || Date.now() - carriedMs > MAX_CARRY_MS;
 
 	const nextStartedAt = sameGame && !stale ? startedAt : new Date();
 

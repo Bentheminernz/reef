@@ -396,7 +396,7 @@ function createBrowserHeaders(upstream: Headers): Headers {
 		headers.append(name, value);
 	}
 	headers.set('cache-control', 'private, no-store');
-    headers.set('referrer-policy', 'same-origin');
+	headers.set('referrer-policy', 'same-origin');
 
 	return headers;
 }

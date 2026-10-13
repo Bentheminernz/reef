@@ -23,6 +23,7 @@ Coral is the codename for the Nintendo Switch App, so its a play on that. As wel
 - **Passkeys** — sign in with a passkey
 
 ## Getting started
+
 ```sh
 git clone https://github.com/Bentheminernz/reef.git
 cd reef
@@ -36,32 +37,34 @@ The app runs at http://localhost:5173.
 
 ## Configuration
 
-| Variable                       | Description                                                                |
-| ------------------------------ | -------------------------------------------------------------------------- |
-| `DATABASE_URL`                 | SQLite location, e.g. `file:local.db`                                      |
-| `WEBAUTHN_RP_NAME`             | Name shown by authenticators when creating a passkey                       |
-| `WEBAUTHN_RP_ID`               | Relying party ID
-| `WEBAUTHN_ORIGIN`              | Full origin the app is served from                                         |
-| `DISCORD_CLIENT_ID`            | Discord application client ID                                              |
-| `DISCORD_CLIENT_SECRET`        | Discord application client secret                                          |
-| `DISCORD_REDIRECT_URI`         | OAuth redirect, e.g. `http://localhost:5173/api/discord/callback`          |
-| `NXAPI_ZNCA_API_CLIENT_ID`     | nxapi-auth service client ID
-| `NXAPI_ZNCA_API_CLIENT_SECRET` | nxapi-auth service client secret                                      |
-| `APP_KEY`                      | Key used to encrypt Nintendo credentials before they are stored            |
-| `APP_KEY_PREVIOUS`             | Optional previous `APP_KEY`, used during key rotation
-| `JWT_KEY`                      | Secret used to sign session tokens                                         |
+| Variable                       | Description                                                       |
+| ------------------------------ | ----------------------------------------------------------------- |
+| `DATABASE_URL`                 | SQLite location, e.g. `file:local.db`                             |
+| `WEBAUTHN_RP_NAME`             | Name shown by authenticators when creating a passkey              |
+| `WEBAUTHN_RP_ID`               | Relying party ID                                                  |
+| `WEBAUTHN_ORIGIN`              | Full origin the app is served from                                |
+| `DISCORD_CLIENT_ID`            | Discord application client ID                                     |
+| `DISCORD_CLIENT_SECRET`        | Discord application client secret                                 |
+| `DISCORD_REDIRECT_URI`         | OAuth redirect, e.g. `http://localhost:5173/api/discord/callback` |
+| `NXAPI_ZNCA_API_CLIENT_ID`     | nxapi-auth service client ID                                      |
+| `NXAPI_ZNCA_API_CLIENT_SECRET` | nxapi-auth service client secret                                  |
+| `APP_KEY`                      | Key used to encrypt Nintendo credentials before they are stored   |
+| `APP_KEY_PREVIOUS`             | Optional previous `APP_KEY`, used during key rotation             |
+| `JWT_KEY`                      | Secret used to sign session tokens                                |
 
 Discord credentials come from the [Discord Developer Portal](https://discord.com/developers/applications) the redirect URI must point at `/api/discord/callback`.
 nxapi znca credentials come from [nxapi-auth](https://nxapi-auth.fancy.org.uk)
 
 ## Contributing
+
 Reef is primarily maintained by me ([Ben Lawrence](mailto:ben@reefpresence.app)). Pull Requests are not publicly accessible for a few reasons:
+
 - This app handles peoples Nintendo Authentication Tokens
 - I want to know and trust people contributing code to this app
 - The recent rise of vibe coded slop, I don't want full slop AI code being contributed to Reef
 
-
 ## Credits
+
 - [nxapi](https://github.com/samuelthomas2774/nxapi) - Amazing library by Ellie which allows your to authenticate with the Nintendo Switch App APIs
 - [dootskyre](https://bsky.app/profile/dootsky.re) - Made the Reef icon, and helped a lot with feedback and ideas
 - [Dycool/nso-webapp](https://github.com/Dycool/nso-webapp) - Helped with patching the Game Web Services to load in a web sandbox

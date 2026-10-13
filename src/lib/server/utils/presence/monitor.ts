@@ -4,9 +4,9 @@ import type { DiscordActivity } from '$lib/types/discord-auth';
 
 export interface PresenceMonitorContext {
 	coralFriend: Friend_4;
-    enabledWebServices: {
-        splatnet3: boolean;
-	}
+	enabledWebServices: {
+		splatnet3: boolean;
+	};
 }
 
 /**

@@ -45,7 +45,11 @@
 
 	import Bell from '@lucide/svelte/icons/bell';
 	import NotificationsPage from '$lib/components/NotificationsPage.svelte';
-	import { browserSupportsWebAuthn, platformAuthenticatorIsAvailable, startRegistration } from '@simplewebauthn/browser';
+	import {
+		browserSupportsWebAuthn,
+		platformAuthenticatorIsAvailable,
+		startRegistration
+	} from '@simplewebauthn/browser';
 
 	type TabName = 'home' | 'friends' | 'album';
 
