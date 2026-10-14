@@ -68,3 +68,4 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           secrets: |
             app_key=${{ secrets.APP_KEY }}
+            sentry_auth_token=${{ secrets.SENTRY_AUTH_TOKEN }}

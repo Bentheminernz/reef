@@ -23,7 +23,8 @@ export default defineConfig({
 	plugins: [
 		sentrySvelteKit({
 			org: 'reef-2s',
-			project: 'javascript-sveltekit'
+			project: 'javascript-sveltekit',
+			release: { name: commit }
 		}),
 		tailwindcss(),
 		sveltekit({
@@ -49,14 +50,18 @@ export default defineConfig({
 				}
 			}
 		})
-	],
+    ],
+    build: {
+        sourcemap: true
+    },
 	define: {
+		__GIT_SHA__: JSON.stringify(commit),
 		__COMMIT__: JSON.stringify(commit.slice(0, 7)),
 		__BUILD_TIME__: JSON.stringify(new Date().toISOString())
 	},
 	server: {
-		allowedHosts: ['native-arising-hammer-saturday.trycloudflare.com', 'reefpresence.app']
-	},
+		allowedHosts: ['reefpresence.app']
+    },
 	test: {
 		expect: { requireAssertions: true },
 		projects: [
