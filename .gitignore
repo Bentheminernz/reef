@@ -148,7 +148,7 @@ vite.config.ts.timestamp-*
 src/lib/server/utils/Fakes.ts
 local.db
 /PRIVACY_POLICY.md
-media/
+/media/
 
 # Sentry Config File
 .env.sentry-build-plugin
