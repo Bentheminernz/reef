@@ -14,6 +14,8 @@ function git(args: string, fallback: string) {
 	}
 }
 
+const commit = process.env.GIT_SHA || git('rev-parse HEAD', 'unknown');
+
 export default defineConfig({
 	ssr: {
 		external: ['@libsql/client', 'nxapi', 'nxapi/coral', 'nxapi/nintendo-account']
@@ -26,7 +28,6 @@ export default defineConfig({
 		tailwindcss(),
 		sveltekit({
 			compilerOptions: {
-				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
@@ -39,10 +40,9 @@ export default defineConfig({
 				}
 			},
 			version: {
-				name: git('rev-parse HEAD', Date.now().toString()),
+				name: commit,
 				pollInterval: 60_000
 			},
-			// Sentry initializes server-side from src/instrumentation.server.ts (SvelteKit >= 2.31).
 			experimental: {
 				instrumentation: {
 					server: true
@@ -51,7 +51,7 @@ export default defineConfig({
 		})
 	],
 	define: {
-		__COMMIT__: JSON.stringify(git('rev-parse --short HEAD', 'unknown')),
+		__COMMIT__: JSON.stringify(commit.slice(0, 7)),
 		__BUILD_TIME__: JSON.stringify(new Date().toISOString())
 	},
 	server: {
