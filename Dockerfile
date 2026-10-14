@@ -8,6 +8,8 @@ RUN npm ci
 
 COPY . .
 
+ARG GIT_SHA=unknown
+
 RUN --mount=type=secret,id=app_key,required=false \
     APP_KEY="$(cat /run/secrets/app_key 2>/dev/null || true)" \
     DATABASE_URL="file:/tmp/build.db" \
