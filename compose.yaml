@@ -1,0 +1,46 @@
+name: reef
+
+x-reef: &reef
+  image: ghcr.io/bentheminernz/reef:${REEF_TAG:-latest}
+  env_file: ${REEF_ENV_FILE:-/etc/coralsvelte/env}
+  environment:
+    HOST: 0.0.0.0
+    PORT: "3000"
+    HOME: /var/lib/coralsvelte
+    XDG_CACHE_HOME: /var/lib/coralsvelte/.cache
+  user: "${CORALSVELTE_UID:?set CORALSVELTE_UID in /srv/coralsvelte/.env}:${CORALSVELTE_GID:?set CORALSVELTE_GID in /srv/coralsvelte/.env}"
+  volumes:
+    - /var/lib/coralsvelte:/var/lib/coralsvelte
+  restart: unless-stopped
+
+services:
+  web:
+    <<: *reef
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/login').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  worker:
+    <<: *reef
+    command:
+      - node_modules/.bin/tsx
+      - --tsconfig
+      - scripts/tsconfig.json
+      - scripts/presence-sync.ts
+
+  migrate:
+    <<: *reef
+    profiles: ["tools"]
+    restart: "no"
+    command:
+      - node_modules/.bin/tsx
+      - scripts/migrate.ts
