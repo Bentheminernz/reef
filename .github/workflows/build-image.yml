@@ -27,8 +27,8 @@ jobs:
           AWS_DEFAULT_REGION: auto
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
         run: |
-          if [ -z "$R2_ACCOUNT_ID" ]; then
-            echo "::error::Set the R2_ACCOUNT_ID, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY repo secrets — see DOCKER.md."
+          if [ -z "$R2_ACCOUNT_ID" ] || [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+            echo "::error::Set the R2_ACCOUNT_ID, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY repo secrets"
             exit 1
           fi
           aws s3 cp "s3://${R2_BUCKET}/${R2_KEY}" /tmp/reef-ci.tar.gz \
