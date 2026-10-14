@@ -38,7 +38,7 @@
 		userPermissions?: UserPermissionsSummary | null;
 	} = $props();
 
-	const supporters: string[] = ['Azteea', 'mia', 'Kiarocki', 'Dycool'];
+	const supporters: string[] = ['Azteea', 'mia', 'Kiarocki', 'Dycool', 'FloGamer64'];
 </script>
 
 <div class="w-full py-8 sm:py-10">

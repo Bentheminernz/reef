@@ -11,8 +11,10 @@ COPY . .
 ARG GIT_SHA=unknown
 
 RUN --mount=type=secret,id=app_key,required=false \
+    --mount=type=secret,id=sentry_auth_token,required=false \
     APP_KEY="$(cat /run/secrets/app_key 2>/dev/null || true)" \
     DATABASE_URL="file:/tmp/build.db" \
+    SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token 2>/dev/null || true)" \
     npm run build
 
 FROM node:24-bookworm-slim AS runtime
