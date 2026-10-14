@@ -254,7 +254,7 @@ export function buildSplatNetDiscordActivity(
 		festTeamVotingStatus = null
 	} = options;
 
-	activity.state = activity.details;
+	// activity.state = activity.details;
 
 	if (
 		(friend.onlineState === FriendOnlineState.VS_MODE_MATCHING ||
