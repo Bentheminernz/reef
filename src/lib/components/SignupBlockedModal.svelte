@@ -5,7 +5,8 @@
 	import { timeAgo } from '$lib/utils/timeAgo';
 	import type { SignupBlockedReason } from '$lib/types/signup';
 
-	let { reason = null }: { reason?: SignupBlockedReason | null } = $props();
+	let { reason = null, linked = false }: { reason?: SignupBlockedReason | null; linked?: boolean } =
+		$props();
 
 	let friends = $state<Friend_4[] | null>(null);
 	let loading = $state(true);
@@ -72,6 +73,21 @@
 		actionError = '';
 
 		try {
+			if (!linked) {
+				const linkResponse = await fetch('/api/discord/generate-url');
+
+				if (!linkResponse.ok) throw new Error('Could not start Discord linking.');
+
+				const { authoriseURL } = (await linkResponse.json()) as { authoriseURL?: string };
+
+				if (typeof authoriseURL !== 'string') {
+					throw new Error('Discord returned an invalid authorisation URL.');
+				}
+
+				window.location.href = authoriseURL;
+				return;
+			}
+
 			const response = await fetch('/api/signup/retry', { method: 'POST' });
 			const data = (await response.json().catch(() => null)) as { status?: string } | null;
 
@@ -81,7 +97,9 @@
 						? 'You still need to unfriend someone before continuing.'
 						: data?.status === 'requests-disabled'
 							? 'Friend requests still seem to be disabled on your Nintendo account. Try again in a moment.'
-							: 'Could not add the system user right now. Try again in a moment.'
+							: data?.status === 'no-capacity'
+								? 'Reef has no room for new Discord presence users right now. Try again later.'
+								: 'Could not add the system user right now. Try again in a moment.'
 				);
 			}
 

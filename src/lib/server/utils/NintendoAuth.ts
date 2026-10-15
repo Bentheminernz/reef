@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from 'node:timers/promises';
 import { count, eq, ne } from 'drizzle-orm';
 import CoralApi, { CoralErrorResponse, CoralStatus, type Friends_4 } from 'nxapi/coral';
 import { db } from '$lib/server/db';
@@ -20,7 +21,13 @@ const NSA_NOT_LINKED = CoralStatus.NSA_NOT_LINKED;
 
 const PERMISSIONS_CACHE_TTL_MS = 5 * 60 * 1000;
 
-export type BotFriendshipStatus = 'complete' | 'friend-limit' | 'requests-disabled' | 'no-discord-linked' | 'unassigned';
+export type BotFriendshipStatus =
+	| 'complete'
+	| 'friend-limit'
+	| 'requests-disabled'
+	| 'no-capacity'
+	| 'no-discord-linked'
+	| 'unassigned';
 
 export interface SystemBotCapacity {
 	friendCount: number | null;
@@ -142,7 +149,7 @@ export async function ensureBotFriendship(account: NintendoAccount): Promise<Bot
 		console.warn(
 			`No system bot user with fewer than ${MAX_ACCOUNTS_PER_SYSTEM_BOT} friends available`
 		);
-		return 'unassigned';
+		return 'no-capacity';
 	}
 
 	const userCoral = await getCoralApi(account);
@@ -201,7 +208,8 @@ export async function ensureBotFriendship(account: NintendoAccount): Promise<Bot
 
 				const botCoral = await getSystemBotCoralApi(systemBot.id);
 				await botCoral.sendFriendRequest(userLookUp.nsaId);
-				accepted = await acceptBotRequestIfPresent(userCoral, systemBot.nsaId);
+
+				accepted = await acceptBotRequestWithRetry(userCoral, systemBot.nsaId);
 
 				if (!accepted) {
 					console.error(`Friend request from system bot ${systemBot.naId} not found after sending`);
@@ -293,6 +301,21 @@ async function acceptBotRequestIfPresent(userCoral: CoralApi, botNsaId: string):
 
 	await userCoral.acceptFriendRequest(botRequest.id);
 	return true;
+}
+
+async function acceptBotRequestWithRetry(
+	userCoral: CoralApi,
+	botNsaId: string,
+	attempts = 6,
+	delayMs = 1000
+): Promise<boolean> {
+	for (let attempt = 0; attempt < attempts; attempt++) {
+		if (await acceptBotRequestIfPresent(userCoral, botNsaId)) return true;
+
+		if (attempt < attempts - 1) await sleep(delayMs);
+	}
+
+	return false;
 }
 
 async function setBotFriendshipBlocked(

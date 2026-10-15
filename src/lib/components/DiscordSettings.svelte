@@ -19,13 +19,15 @@
 		presenceSession,
 		visibleSystemBotInfo,
 		userPermissions,
-		discordEnrolmentsEnabled
+		discordEnrolmentsEnabled,
+		discordLinkError = null
 	}: {
 		discordLink?: DiscordLinkSummary;
 		presenceSession?: PresenceSessionSummary;
 		visibleSystemBotInfo?: VisibleSystemBotInfo | null;
 		userPermissions?: UserPermissionsSummary | null;
 		discordEnrolmentsEnabled: boolean;
+		discordLinkError?: string | null;
 	} = $props();
 
 	let unlinkOpen = $state(false);
@@ -121,6 +123,13 @@
 		<h2 id="discord-heading" class="text-lg font-semibold">Discord</h2>
 		<p class="mt-1 max-w-2xl text-sm opacity-65">Link a Discord account to share your presence.</p>
 	</header>
+
+	{#if discordLinkError}
+		<div class="mb-3 alert items-start alert-error" role="alert">
+			<CircleX class="size-5 shrink-0" aria-hidden="true" />
+			<span>{discordLinkError}</span>
+		</div>
+	{/if}
 
 	<div class="overflow-hidden rounded-2xl border border-base-300 bg-base-200">
 		{#if discordLink}

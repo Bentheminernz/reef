@@ -1,6 +1,6 @@
 import { invalidateCoralFriends } from '$lib/server/coral.js';
 import { db } from '$lib/server/db/index.js';
-import { discordLinks, siteSetting } from '$lib/server/db/schema.js';
+import { discordLinks, presenceSessions, siteSetting } from '$lib/server/db/schema.js';
 import { exchangeCallbackCode, fetchDiscordUser } from '$lib/server/utils/DiscordAuth.js';
 import { ensureBotFriendship } from '$lib/server/utils/NintendoAuth.js';
 import { error, isHttpError, isRedirect, redirect } from '@sveltejs/kit';
@@ -61,6 +61,8 @@ export async function GET({ locals, cookies, url }) {
 		path: '/'
 	});
 
+	let linkId: string | null = null;
+
 	try {
 		const existingLink = await db
 			.select({ id: discordLinks.id })
@@ -87,29 +89,52 @@ export async function GET({ locals, cookies, url }) {
 
 		const expiresAt = Math.floor(Date.now() / 1000) + tokens.expires_in;
 
-		await db.insert(discordLinks).values({
-			nintendoAccountId: locals.nintendoAccount.id,
-			discordUserId: user.id,
-			discordUsername: user.username,
-			discordAvatar: user.avatar,
-			discordAuth: {
-				expires_time: expiresAt,
-				...tokens
-			}
-        });
+		const [link] = await db
+			.insert(discordLinks)
+			.values({
+				nintendoAccountId: locals.nintendoAccount.id,
+				discordUserId: user.id,
+				discordUsername: user.username,
+				discordAvatar: user.avatar,
+				discordAuth: {
+					expires_time: expiresAt,
+					...tokens
+				}
+			})
+			.returning({ id: discordLinks.id });
 
-        const botFriendship = await ensureBotFriendship(locals.nintendoAccount);
+		linkId = link.id;
 
-        if (botFriendship == 'complete') {
-            invalidateCoralFriends(locals.nintendoAccount.id);
-        }
+		const botFriendship = await ensureBotFriendship(locals.nintendoAccount);
+
+		if (botFriendship !== 'complete') {
+			await rollbackDiscordLink(link.id);
+			linkId = null;
+
+			redirect(303, `/settings?discordError=${botFriendship}`);
+		}
+
+		invalidateCoralFriends(locals.nintendoAccount.id);
 
 		redirect(303, '/settings');
 	} catch (err) {
 		if (isHttpError(err) || isRedirect(err)) throw err;
 
+		if (linkId != null) {
+			await rollbackDiscordLink(linkId).catch((error) =>
+				console.error('Failed to roll back Discord link after error', error)
+			);
+		}
+
 		console.error('Linking failed:', err);
 
-		throw error(500, 'An error occurred while linking.');
+		redirect(303, '/settings?discordError=unassigned');
 	}
+}
+
+async function rollbackDiscordLink(linkId: string): Promise<void> {
+	await db.transaction(async (tx) => {
+		await tx.delete(presenceSessions).where(eq(presenceSessions.discordLinkId, linkId));
+		await tx.delete(discordLinks).where(eq(discordLinks.id, linkId));
+	});
 }

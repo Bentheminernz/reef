@@ -441,6 +441,7 @@
 				adminSettings={data.adminSettings}
 				userPermissions={data.userPermissions}
 				discordEnrolmentsEnabled={data.discordEnrolmentEnabled}
+				discordLinkError={data.discordLinkError}
 			/>
 		</div>
 	{/if}
@@ -531,7 +532,7 @@
 </div>
 
 {#if data.signupBlocked}
-	<SignupBlockedModal reason={data.signupBlockedReason} />
+	<SignupBlockedModal reason={data.signupBlockedReason} linked={data.discordLink != null} />
 {/if}
 
 {#if pendingAckNotice}
