@@ -1,12 +1,32 @@
 import { invalidateCoralFriends } from '$lib/server/coral.js';
 import { db } from '$lib/server/db/index.js';
-import { discordLinks } from '$lib/server/db/schema.js';
+import { discordLinks, siteSetting } from '$lib/server/db/schema.js';
 import { exchangeCallbackCode, fetchDiscordUser } from '$lib/server/utils/DiscordAuth.js';
 import { ensureBotFriendship } from '$lib/server/utils/NintendoAuth.js';
 import { error, isHttpError, isRedirect, redirect } from '@sveltejs/kit';
-import { eq } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 
 export async function GET({ locals, cookies, url }) {
+    const siteSettings = await db
+        .select()
+        .from(siteSetting)
+        .where(eq(siteSetting.id, 1))
+        .limit(1)
+        .get();
+
+    if (!siteSettings || !siteSettings.discordEnrolmentEnabled) {
+        throw error(403, 'Discord enrolment is currently disabled')
+    }
+
+    const [{ count: totalLinks }] = await db
+        .select({ count: count() })
+        .from(discordLinks);
+
+
+    if (totalLinks >= siteSettings.discordEnrolmentLimit) {
+        throw error(403, 'Discord enrolment has reached its limit')
+    }
+
 	const discordError = url.searchParams.get('error');
 
 	if (discordError != null) {

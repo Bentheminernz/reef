@@ -1,0 +1,2 @@
+ALTER TABLE `site_settings` RENAME COLUMN "sign_up_limit" TO "discord_enrolment_limit";--> statement-breakpoint
+ALTER TABLE `site_settings` ADD `discord_enrolment_enabled` integer DEFAULT false NOT NULL;

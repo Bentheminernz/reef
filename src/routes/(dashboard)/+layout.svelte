@@ -440,6 +440,7 @@
 				isAdmin={data.isAdmin}
 				adminSettings={data.adminSettings}
 				userPermissions={data.userPermissions}
+				discordEnrolmentsEnabled={data.discordEnrolmentEnabled}
 			/>
 		</div>
 	{/if}

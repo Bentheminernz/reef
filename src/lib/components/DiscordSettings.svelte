@@ -18,12 +18,14 @@
 		discordLink,
 		presenceSession,
 		visibleSystemBotInfo,
-		userPermissions
+		userPermissions,
+		discordEnrolmentsEnabled
 	}: {
 		discordLink?: DiscordLinkSummary;
 		presenceSession?: PresenceSessionSummary;
 		visibleSystemBotInfo?: VisibleSystemBotInfo | null;
 		userPermissions?: UserPermissionsSummary | null;
+		discordEnrolmentsEnabled: boolean;
 	} = $props();
 
 	let unlinkOpen = $state(false);
@@ -448,7 +450,13 @@
 				</div>
 
 				<div class="min-w-0 flex-1">
-					<p class="font-semibold">No Discord account linked</p>
+					<p class="font-semibold">
+					    No Discord account linked
+
+						{#if !discordEnrolmentsEnabled}
+							<span class="badge badge-error px-1 font-normal">Enrolment is currently disabled.</span>
+						{/if}
+					</p>
 					<p class="mt-0.5 text-sm opacity-65">
 						Connect a Discord account to enable Discord features.
 					</p>
@@ -458,7 +466,7 @@
 					class="btn w-full btn-primary sm:w-auto"
 					type="button"
 					onclick={linkAccount}
-					disabled={linking}
+					disabled={linking || !discordEnrolmentsEnabled}
 				>
 					{linking ? 'Redirecting...' : 'Link Discord account'}
 				</button>

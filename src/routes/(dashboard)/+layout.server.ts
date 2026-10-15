@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, sql } from 'drizzle-orm';
 import type { LayoutServerLoad } from './$types';
 import {
 	getCoralApi,
@@ -178,16 +178,20 @@ export const load = (async ({ locals, depends, isDataRequest }) => {
 
 	const admin = isAdmin(locals.nintendoAccount.naId);
 
-	const adminSettings = admin
-		? ((await db.select().from(siteSetting).where(eq(siteSetting.id, 1)).get()) ?? {
-                signUpEnabled: false,
-                discordEnrolmentEnabled: false,
-                discordEnrolmentLimit: 100,
-				discordInviteLink: 'https://discord.gg/bmCyVeF6Vw'
-			})
-		: null;
+    const siteSettings = await db
+        .select()
+        .from(siteSetting)
+        .where(eq(siteSetting.id, 1))
+        .get();
 
-	const deferredData = !isDataRequest
+    const adminSettings = admin ? (siteSettings ?? {
+        signUpEnabled: false,
+        discordEnrolmentEnabled: false,
+        discordEnrolmentLimit: 100,
+        discordInviteLink: 'https://discord.gg/bmCyVeF6Vw'
+    }) : null;
+
+    const deferredData = !isDataRequest
 		? { friends, media, webServices, userInfo, notifications }
 		: await Promise.all([friends, media, webServices, userInfo, notifications]).then(
 				([friends, media, webServices, userInfo, notifications]) => ({
@@ -198,9 +202,17 @@ export const load = (async ({ locals, depends, isDataRequest }) => {
 					notifications
 				}),
 				() => ({ friends, media, webServices, userInfo, notifications })
-			);
+        );
 
-	return {
+    const [{ count: totalLinks }] = await db
+        .select({ count: count() })
+        .from(discordLinks);
+
+    const discordEnrolmentEnabled =
+        !!siteSettings?.discordEnrolmentEnabled &&
+        siteSettings.discordEnrolmentLimit > totalLinks
+
+    return {
 		...deferredData,
 		signupBlocked: locals.nintendoAccount.botFriendshipBlocked ?? false,
 		signupBlockedReason: locals.nintendoAccount.botFriendshipBlockedReason ?? null,
@@ -213,6 +225,7 @@ export const load = (async ({ locals, depends, isDataRequest }) => {
 		allowAssets: locals.nintendoAccount.accessNintendoAssets,
 		isAdmin: admin,
 		adminSettings,
-		userPermissions: locals.nintendoAccount.currentUserPermissions
+        userPermissions: locals.nintendoAccount.currentUserPermissions,
+		discordEnrolmentEnabled
 	};
 }) satisfies LayoutServerLoad;

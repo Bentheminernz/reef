@@ -1,0 +1,1248 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "96c3d4ed-a749-44f1-a405-742204748c87",
+  "prevId": "5c05e524-6c63-449d-a87c-aef2a821e115",
+  "tables": {
+    "acknowledged_notices": {
+      "name": "acknowledged_notices",
+      "columns": {
+        "nintendo_account_id": {
+          "name": "nintendo_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "update_release_note_id": {
+          "name": "update_release_note_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "read_at": {
+          "name": "read_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "acknowledged_notices_nintendo_account_id_nintendo_accounts_id_fk": {
+          "name": "acknowledged_notices_nintendo_account_id_nintendo_accounts_id_fk",
+          "tableFrom": "acknowledged_notices",
+          "tableTo": "nintendo_accounts",
+          "columnsFrom": [
+            "nintendo_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "acknowledged_notices_update_release_note_id_notices_id_fk": {
+          "name": "acknowledged_notices_update_release_note_id_notices_id_fk",
+          "tableFrom": "acknowledged_notices",
+          "tableTo": "notices",
+          "columnsFrom": [
+            "update_release_note_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "acknowledged_notices_nintendo_account_id_update_release_note_id_pk": {
+          "columns": [
+            "nintendo_account_id",
+            "update_release_note_id"
+          ],
+          "name": "acknowledged_notices_nintendo_account_id_update_release_note_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "data_access": {
+      "name": "data_access",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nintendo_account_id": {
+          "name": "nintendo_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "endpoint": {
+          "name": "endpoint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ok": {
+          "name": "ok",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "data_access_account_time_idx": {
+          "name": "data_access_account_time_idx",
+          "columns": [
+            "nintendo_account_id",
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "data_access_nintendo_account_id_nintendo_accounts_id_fk": {
+          "name": "data_access_nintendo_account_id_nintendo_accounts_id_fk",
+          "tableFrom": "data_access",
+          "tableTo": "nintendo_accounts",
+          "columnsFrom": [
+            "nintendo_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "discord_links": {
+      "name": "discord_links",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nintendo_account_id": {
+          "name": "nintendo_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "discord_user_id": {
+          "name": "discord_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "discord_username": {
+          "name": "discord_username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "discord_avatar": {
+          "name": "discord_avatar",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "discord_auth": {
+          "name": "discord_auth",
+          "type": "blob",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "linked_at": {
+          "name": "linked_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "discord_links_nintendo_account_id_unique": {
+          "name": "discord_links_nintendo_account_id_unique",
+          "columns": [
+            "nintendo_account_id"
+          ],
+          "isUnique": true
+        },
+        "discord_links_discord_user_id_unique": {
+          "name": "discord_links_discord_user_id_unique",
+          "columns": [
+            "discord_user_id"
+          ],
+          "isUnique": true
+        },
+        "discord_links_discord_user_idx": {
+          "name": "discord_links_discord_user_idx",
+          "columns": [
+            "discord_user_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "discord_links_nintendo_account_id_nintendo_accounts_id_fk": {
+          "name": "discord_links_nintendo_account_id_nintendo_accounts_id_fk",
+          "tableFrom": "discord_links",
+          "tableTo": "nintendo_accounts",
+          "columnsFrom": [
+            "nintendo_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "friend_code_data": {
+      "name": "friend_code_data",
+      "columns": {
+        "nintendo_account_id": {
+          "name": "nintendo_account_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "friend_code": {
+          "name": "friend_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "friend_code_url": {
+          "name": "friend_code_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "link_id": {
+          "name": "link_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "generated_at": {
+          "name": "generated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "friend_code_data_nintendo_account_id_nintendo_accounts_id_fk": {
+          "name": "friend_code_data_nintendo_account_id_nintendo_accounts_id_fk",
+          "tableFrom": "friend_code_data",
+          "tableTo": "nintendo_accounts",
+          "columnsFrom": [
+            "nintendo_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "game_web_service_tokens": {
+      "name": "game_web_service_tokens",
+      "columns": {
+        "nintendo_account_id": {
+          "name": "nintendo_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "service_id": {
+          "name": "service_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "token": {
+          "name": "token",
+          "type": "blob",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "game_web_service_tokens_expiry_idx": {
+          "name": "game_web_service_tokens_expiry_idx",
+          "columns": [
+            "expires_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "game_web_service_tokens_nintendo_account_id_nintendo_accounts_id_fk": {
+          "name": "game_web_service_tokens_nintendo_account_id_nintendo_accounts_id_fk",
+          "tableFrom": "game_web_service_tokens",
+          "tableTo": "nintendo_accounts",
+          "columnsFrom": [
+            "nintendo_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "game_web_service_tokens_nintendo_account_id_service_id_pk": {
+          "columns": [
+            "nintendo_account_id",
+            "service_id"
+          ],
+          "name": "game_web_service_tokens_nintendo_account_id_service_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "game_webview_sessions": {
+      "name": "game_webview_sessions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nintendo_account_id": {
+          "name": "nintendo_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "service_id": {
+          "name": "service_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "service_uri": {
+          "name": "service_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "allowed_origins": {
+          "name": "allowed_origins",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "language": {
+          "name": "language",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "country": {
+          "name": "country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "cookies": {
+          "name": "cookies",
+          "type": "blob",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "game_webview_sessions_account_idx": {
+          "name": "game_webview_sessions_account_idx",
+          "columns": [
+            "nintendo_account_id"
+          ],
+          "isUnique": false
+        },
+        "game_webview_sessions_expiry_idx": {
+          "name": "game_webview_sessions_expiry_idx",
+          "columns": [
+            "expires_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "game_webview_sessions_nintendo_account_id_nintendo_accounts_id_fk": {
+          "name": "game_webview_sessions_nintendo_account_id_nintendo_accounts_id_fk",
+          "tableFrom": "game_webview_sessions",
+          "tableTo": "nintendo_accounts",
+          "columnsFrom": [
+            "nintendo_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "nintendo_accounts": {
+      "name": "nintendo_accounts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "na_id": {
+          "name": "na_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nsa_id": {
+          "name": "nsa_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "nintendo_account_session": {
+          "name": "nintendo_account_session",
+          "type": "blob",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "coral_auth_data": {
+          "name": "coral_auth_data",
+          "type": "blob",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "system_bot_user_id": {
+          "name": "system_bot_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "bot_friendship_blocked": {
+          "name": "bot_friendship_blocked",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "bot_friendship_blocked_reason": {
+          "name": "bot_friendship_blocked_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "access_nintendo_assets": {
+          "name": "access_nintendo_assets",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "current_user_permissions": {
+          "name": "current_user_permissions",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "permissions_synced_at": {
+          "name": "permissions_synced_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "nintendo_accounts_na_id_unique": {
+          "name": "nintendo_accounts_na_id_unique",
+          "columns": [
+            "na_id"
+          ],
+          "isUnique": true
+        },
+        "nintendo_accounts_nsa_id_unique": {
+          "name": "nintendo_accounts_nsa_id_unique",
+          "columns": [
+            "nsa_id"
+          ],
+          "isUnique": true
+        },
+        "nintendo_accounts_system_bot_user_idx": {
+          "name": "nintendo_accounts_system_bot_user_idx",
+          "columns": [
+            "system_bot_user_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "nintendo_accounts_system_bot_user_id_system_bot_user_id_fk": {
+          "name": "nintendo_accounts_system_bot_user_id_system_bot_user_id_fk",
+          "tableFrom": "nintendo_accounts",
+          "tableTo": "system_bot_user",
+          "columnsFrom": [
+            "system_bot_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "notices": {
+      "name": "notices",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "require_acknowledgement": {
+          "name": "require_acknowledgement",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'Update'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "passkeys": {
+      "name": "passkeys",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nintendo_account_id": {
+          "name": "nintendo_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "public_key": {
+          "name": "public_key",
+          "type": "blob",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "counter": {
+          "name": "counter",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "device_type": {
+          "name": "device_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "backed_up": {
+          "name": "backed_up",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "transports": {
+          "name": "transports",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "passkeys_nintendo_account_idx": {
+          "name": "passkeys_nintendo_account_idx",
+          "columns": [
+            "nintendo_account_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "passkeys_nintendo_account_id_nintendo_accounts_id_fk": {
+          "name": "passkeys_nintendo_account_id_nintendo_accounts_id_fk",
+          "tableFrom": "passkeys",
+          "tableTo": "nintendo_accounts",
+          "columnsFrom": [
+            "nintendo_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "policy_acceptance": {
+      "name": "policy_acceptance",
+      "columns": {
+        "nintendo_account_id": {
+          "name": "nintendo_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "policy_id": {
+          "name": "policy_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "accepted_at": {
+          "name": "accepted_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "policy_acceptance_nintendo_account_id_nintendo_accounts_id_fk": {
+          "name": "policy_acceptance_nintendo_account_id_nintendo_accounts_id_fk",
+          "tableFrom": "policy_acceptance",
+          "tableTo": "nintendo_accounts",
+          "columnsFrom": [
+            "nintendo_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "policy_acceptance_policy_id_privacy_policy_id_fk": {
+          "name": "policy_acceptance_policy_id_privacy_policy_id_fk",
+          "tableFrom": "policy_acceptance",
+          "tableTo": "privacy_policy",
+          "columnsFrom": [
+            "policy_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "policy_acceptance_nintendo_account_id_policy_id_pk": {
+          "columns": [
+            "nintendo_account_id",
+            "policy_id"
+          ],
+          "name": "policy_acceptance_nintendo_account_id_policy_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "presence_sessions": {
+      "name": "presence_sessions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "discord_link_id": {
+          "name": "discord_link_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "enabled": {
+          "name": "enabled",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "presence": {
+          "name": "presence",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "activity": {
+          "name": "activity",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "platform": {
+          "name": "platform",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'desktop'"
+        },
+        "splatnet_enabled": {
+          "name": "splatnet_enabled",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
+        "show_when_inactive": {
+          "name": "show_when_inactive",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "show_eshop_button": {
+          "name": "show_eshop_button",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
+        "show_friend_code_button": {
+          "name": "show_friend_code_button",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
+        "discord_token": {
+          "name": "discord_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "last_synced_at": {
+          "name": "last_synced_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "publish_failures": {
+          "name": "publish_failures",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "last_publish_error": {
+          "name": "last_publish_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "needs_reauth": {
+          "name": "needs_reauth",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        }
+      },
+      "indexes": {
+        "presence_sessions_discord_link_id_unique": {
+          "name": "presence_sessions_discord_link_id_unique",
+          "columns": [
+            "discord_link_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "presence_sessions_discord_link_id_discord_links_id_fk": {
+          "name": "presence_sessions_discord_link_id_discord_links_id_fk",
+          "tableFrom": "presence_sessions",
+          "tableTo": "discord_links",
+          "columnsFrom": [
+            "discord_link_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "privacy_policy": {
+      "name": "privacy_policy",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "version": {
+          "name": "version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "enforcement_date": {
+          "name": "enforcement_date",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "sessions": {
+      "name": "sessions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nintendo_account_id": {
+          "name": "nintendo_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "sessions_nintendo_account_idx": {
+          "name": "sessions_nintendo_account_idx",
+          "columns": [
+            "nintendo_account_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "sessions_nintendo_account_id_nintendo_accounts_id_fk": {
+          "name": "sessions_nintendo_account_id_nintendo_accounts_id_fk",
+          "tableFrom": "sessions",
+          "tableTo": "nintendo_accounts",
+          "columnsFrom": [
+            "nintendo_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "site_settings": {
+      "name": "site_settings",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "sign_up_enabled": {
+          "name": "sign_up_enabled",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "discord_enrolment_enabled": {
+          "name": "discord_enrolment_enabled",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "discord_enrolment_limit": {
+          "name": "discord_enrolment_limit",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 100
+        },
+        "discord_invite_link": {
+          "name": "discord_invite_link",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'https://discord.gg/bmCyVeF6Vw'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "site_settings_singleton": {
+          "name": "site_settings_singleton",
+          "value": "\"site_settings\".\"id\" = 1"
+        }
+      }
+    },
+    "system_bot_user": {
+      "name": "system_bot_user",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "na_id": {
+          "name": "na_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nsa_id": {
+          "name": "nsa_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nintendo_account_session": {
+          "name": "nintendo_account_session",
+          "type": "blob",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "coral_auth_data": {
+          "name": "coral_auth_data",
+          "type": "blob",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "splatnet3_auth_data": {
+          "name": "splatnet3_auth_data",
+          "type": "blob",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "splatnet3_enabled": {
+          "name": "splatnet3_enabled",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "allowing_requests": {
+          "name": "allowing_requests",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "friend_count": {
+          "name": "friend_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "system_bot_user_na_id_unique": {
+          "name": "system_bot_user_na_id_unique",
+          "columns": [
+            "na_id"
+          ],
+          "isUnique": true
+        },
+        "system_bot_user_nsa_id_unique": {
+          "name": "system_bot_user_nsa_id_unique",
+          "columns": [
+            "nsa_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {
+      "\"site_settings\".\"sign_up_limit\"": "\"site_settings\".\"discord_enrolment_limit\""
+    }
+  },
+  "internal": {
+    "indexes": {}
+  }
+}
