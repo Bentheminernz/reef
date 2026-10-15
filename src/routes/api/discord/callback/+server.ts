@@ -1,6 +1,8 @@
+import { invalidateCoralFriends } from '$lib/server/coral.js';
 import { db } from '$lib/server/db/index.js';
 import { discordLinks } from '$lib/server/db/schema.js';
 import { exchangeCallbackCode, fetchDiscordUser } from '$lib/server/utils/DiscordAuth.js';
+import { ensureBotFriendship } from '$lib/server/utils/NintendoAuth.js';
 import { error, isHttpError, isRedirect, redirect } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 
@@ -74,7 +76,13 @@ export async function GET({ locals, cookies, url }) {
 				expires_time: expiresAt,
 				...tokens
 			}
-		});
+        });
+
+        const botFriendship = await ensureBotFriendship(locals.nintendoAccount);
+
+        if (botFriendship == 'complete') {
+            invalidateCoralFriends(locals.nintendoAccount.id);
+        }
 
 		redirect(303, '/settings');
 	} catch (err) {

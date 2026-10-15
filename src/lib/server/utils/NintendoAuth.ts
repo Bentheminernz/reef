@@ -1,7 +1,7 @@
 import { count, eq, ne } from 'drizzle-orm';
 import CoralApi, { CoralErrorResponse, CoralStatus, type Friends_4 } from 'nxapi/coral';
 import { db } from '$lib/server/db';
-import { nintendoAccount, systemBotUser, friendCodeData, siteSetting } from '$lib/server/db/schema';
+import { nintendoAccount, systemBotUser, friendCodeData, siteSetting, discordLinks } from '$lib/server/db/schema';
 import type { SignupBlockedReason } from '$lib/types/signup';
 import {
 	getCoralApi,
@@ -20,7 +20,7 @@ const NSA_NOT_LINKED = CoralStatus.NSA_NOT_LINKED;
 
 const PERMISSIONS_CACHE_TTL_MS = 5 * 60 * 1000;
 
-export type BotFriendshipStatus = 'complete' | 'friend-limit' | 'requests-disabled' | 'unassigned';
+export type BotFriendshipStatus = 'complete' | 'friend-limit' | 'requests-disabled' | 'no-discord-linked' | 'unassigned';
 
 export interface SystemBotCapacity {
 	friendCount: number | null;
@@ -37,13 +37,6 @@ export class SignUpDisabledError extends Error {
 	constructor() {
 		super('Sign ups are disabled');
 		this.name = 'SignUpDisabledError';
-	}
-}
-
-export class SignUpLimitReached extends Error {
-	constructor() {
-		super('Maximum amount of users has been reached');
-		this.name = 'SignUpLimitReached';
 	}
 }
 
@@ -66,7 +59,17 @@ function getSubFromSessionToken(sessionToken: string): string {
 
 type NintendoAccount = typeof nintendoAccount.$inferSelect;
 
-async function ensureBotFriendship(account: NintendoAccount): Promise<BotFriendshipStatus> {
+export async function ensureBotFriendship(account: NintendoAccount): Promise<BotFriendshipStatus> {
+    const discordLink = await db
+        .select()
+        .from(discordLinks)
+        .where(eq(discordLinks.nintendoAccountId, account.id))
+        .get();
+
+    if (!discordLink) {
+        return 'no-discord-linked';
+    }
+
 	if (account.systemBotUserId != null) {
 		let stillFriends: boolean;
 
@@ -433,12 +436,6 @@ export async function loginWithSessionToken(sessionToken: string, code: string) 
 	} else {
 		if (!siteSettings?.signUpEnabled) {
 			throw new SignUpDisabledError();
-		}
-
-		const [{ total }] = await db.select({ total: count() }).from(nintendoAccount);
-
-		if (total >= siteSettings.signUpLimit) {
-			throw new SignUpLimitReached();
 		}
 
 		[account] = await db

@@ -9,7 +9,6 @@ import {
 	loginWithSessionToken,
 	systemBotHasRoom,
 	SignUpDisabledError,
-	SignUpLimitReached,
 	NintendoSwitchNotLinkedError
 } from '$lib/server/utils/NintendoAuth';
 import { createSession } from '$lib/server/session';
@@ -138,14 +137,6 @@ export const actions: Actions = {
 			if (error instanceof SignUpDisabledError) {
 				return fail(403, {
 					message: 'Sign ups are currently closed. Existing accounts can still sign in.',
-					redirectUri
-				});
-			}
-
-			if (error instanceof SignUpLimitReached) {
-				return fail(403, {
-					message:
-						"We've hit our sign-up limit for now. Please check back soon, as spots open up quite frequently :)",
 					redirectUri
 				});
 			}

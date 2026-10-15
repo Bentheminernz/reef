@@ -180,8 +180,9 @@ export const load = (async ({ locals, depends, isDataRequest }) => {
 
 	const adminSettings = admin
 		? ((await db.select().from(siteSetting).where(eq(siteSetting.id, 1)).get()) ?? {
-				signUpEnabled: false,
-				signUpLimit: 100,
+                signUpEnabled: false,
+                discordEnrolmentEnabled: false,
+                discordEnrolmentLimit: 100,
 				discordInviteLink: 'https://discord.gg/bmCyVeF6Vw'
 			})
 		: null;
