@@ -430,6 +430,34 @@ export async function retryBotFriendship(nintendoAccountId: string): Promise<Bot
 	return status;
 }
 
+export async function removeBotFriendship(account: NintendoAccount): Promise<void> {
+	if (account.systemBotUserId != null) {
+		try {
+			const systemBot = await db
+				.select({ nsaId: systemBotUser.nsaId })
+				.from(systemBotUser)
+				.where(eq(systemBotUser.id, account.systemBotUserId))
+				.get();
+
+			if (systemBot != null) {
+				const coral = await getCoralApi(account);
+				await coral.deleteFriend(systemBot.nsaId);
+			}
+		} catch (error) {
+			console.warn('Failed to unfriend system bot', error);
+		}
+	}
+
+	await db
+		.update(nintendoAccount)
+		.set({ systemBotUserId: null, botFriendshipBlocked: false, botFriendshipBlockedReason: null })
+		.where(eq(nintendoAccount.id, account.id));
+
+	account.systemBotUserId = null;
+	account.botFriendshipBlocked = false;
+	account.botFriendshipBlockedReason = null;
+}
+
 export async function loginWithSessionToken(sessionToken: string, code: string) {
 	const naId = getSubFromSessionToken(sessionToken);
 

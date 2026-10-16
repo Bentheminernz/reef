@@ -3,9 +3,10 @@ import type { RequestHandler } from './$types';
 import { decodeJwt } from 'jose';
 import { NintendoAccountSessionAuthorisationCoral } from 'nxapi/coral';
 import { endDiscordHeadlessSession, revokeDiscordAuth } from '$lib/server/utils/DiscordAuth';
-import { clearAccountCaches, getCoralApi } from '$lib/server/coral';
+import { clearAccountCaches } from '$lib/server/coral';
+import { removeBotFriendship } from '$lib/server/utils/NintendoAuth';
 import { db } from '$lib/server/db';
-import { discordLinks, nintendoAccount, sessions, systemBotUser } from '$lib/server/db/schema';
+import { discordLinks, nintendoAccount, sessions } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 
 export const GET: RequestHandler = async ({ locals }) => {
@@ -79,22 +80,7 @@ export const POST: RequestHandler = async ({ locals, request, cookies }) => {
 		}
 	}
 
-	if (user.systemBotUserId) {
-		const systemBot = await db
-			.select()
-			.from(systemBotUser)
-			.where(eq(systemBotUser.id, user.systemBotUserId))
-			.get();
-
-		if (systemBot) {
-			try {
-				const coral = await getCoralApi(user);
-				await coral.deleteFriend(systemBot.nsaId);
-			} catch (cause) {
-				console.warn('[deleteAccount] Could not unfriend system bot', cause);
-			}
-		}
-	}
+	await removeBotFriendship(user);
 
 	await db.transaction(async (tx) => {
 		await tx.delete(sessions).where(eq(sessions.nintendoAccountId, user.id));

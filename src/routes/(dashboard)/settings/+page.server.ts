@@ -244,7 +244,7 @@ export const actions: Actions = {
 			.values({ signUpEnabled, discordEnrolmentEnabled, discordEnrolmentLimit, discordInviteLink })
 			.onConflictDoUpdate({
 				target: siteSetting.id,
-				set: { signUpEnabled, discordEnrolmentLimit, discordInviteLink }
+				set: { signUpEnabled, discordEnrolmentEnabled, discordEnrolmentLimit, discordInviteLink }
 			})
 			.returning();
 
