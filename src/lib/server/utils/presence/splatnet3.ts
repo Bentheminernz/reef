@@ -32,6 +32,9 @@ import cached from '$lib/utils/cached';
 
 const SPLATOON_3_TITLE_ID = '0100c2500fc20000';
 
+const SPLATNET_MATCHING_IMAGE =
+	'https://media1.tenor.com/m/kneuabZg-IIAAAAd/splatoon-splatoon3.gif?animated=true';
+
 const SPLATNET_ASSET_IDS: Record<string, string> = {
 	'mode-coop-teamcontest-1': '1555664780604342363',
 	'mode-coop-regular-1': '1555664781468377170',
@@ -322,22 +325,21 @@ export function buildSplatNetDiscordActivity(
 			//     (friend.vsMode.id === 'VnNNb2RlLTY=' && fest_team?.role === FestTeamRole.DEFENSE) ||
 			//     (friend.vsMode.id === 'VnNNb2RlLTg=')
 			// );
-			// setLargeImage(
-			// 	activity,
-			// 	'https://fancy.org.uk/api/nxapi/s3/image?' +
-			// 		new URLSearchParams({
-			// 			a: setting.vsStages[0].id,
-			// 			b: setting.vsStages[1].id,
-			// 			// ...(possibly_tricolour ? {t: fest?.tricolorStage.id} : {}),
-			// 			v: '2022092400'
-			// 		}).toString(),
-			// 	setting.vsStages.map((s) => s.name).join('/')
-			// );
+			setLargeImage(
+				activity,
+				'https://s3.reefpresence.app/s3/stageImage.webp?' +
+					new URLSearchParams({
+						a: setting.vsStages[0].id,
+						b: setting.vsStages[1].id,
+						animated: 'true'
+					}).toString(),
+				setting.vsStages.map((s) => s.name).join('/')
+			);
 			//
-			const stage_image = stageImages.get(setting.vsStages[0].id);
-			if (stage_image) {
-				setLargeImage(activity, stage_image, setting.vsStages.map((stage) => stage.name).join('/'));
-			}
+			// const stage_image = stageImages.get(setting.vsStages[0].id);
+			// if (stage_image) {
+			// 	setLargeImage(activity, stage_image, setting.vsStages.map((stage) => stage.name).join('/'));
+			// }
 		}
 
 		const mode_image =
@@ -363,7 +365,12 @@ export function buildSplatNetDiscordActivity(
 									? assetImage('mode-vs-private-1')
 									: undefined;
 
-		if (mode_image) {
+		if (friend.onlineState === FriendOnlineState.VS_MODE_MATCHING) {
+			setLargeImage(activity, SPLATNET_MATCHING_IMAGE, 'Matching');
+			if (mode_image) {
+				setSmallImage(activity, mode_image, mode_name ?? friend.vsMode.name);
+			}
+		} else if (mode_image) {
 			setSmallImage(activity, mode_image, mode_name ?? friend.vsMode.name);
 		}
 	}
@@ -391,14 +398,22 @@ export function buildSplatNetDiscordActivity(
 			}
 		}
 
-		if (friend.coopRule === CoopRule.REGULAR) {
-			setSmallImage(activity, assetImage('mode-coop-regular-1'), 'Salmon Run');
-		}
-		if (friend.coopRule === CoopRule.BIG_RUN) {
-			setSmallImage(activity, assetImage('mode-coop-bigrun-1'), 'Big Run');
-		}
-		if (friend.coopRule === CoopRule.TEAM_CONTEST) {
-			setSmallImage(activity, assetImage('mode-coop-teamcontest-1'), 'Eggstra Work');
+		const coop_mode =
+			friend.coopRule === CoopRule.REGULAR
+				? { image: assetImage('mode-coop-regular-1'), text: 'Salmon Run' }
+				: friend.coopRule === CoopRule.BIG_RUN
+					? { image: assetImage('mode-coop-bigrun-1'), text: 'Big Run' }
+					: friend.coopRule === CoopRule.TEAM_CONTEST
+						? { image: assetImage('mode-coop-teamcontest-1'), text: 'Eggstra Work' }
+						: null;
+
+		if (coop_mode) {
+			if (friend.onlineState === FriendOnlineState.COOP_MODE_MATCHING) {
+				setLargeImage(activity, SPLATNET_MATCHING_IMAGE, 'Matching');
+				setSmallImage(activity, coop_mode.image, coop_mode.text);
+			} else {
+				setSmallImage(activity, coop_mode.image, coop_mode.text);
+			}
 		}
 	}
 

@@ -50,10 +50,10 @@ export default defineConfig({
 				}
 			}
 		})
-    ],
-    build: {
-        sourcemap: true
-    },
+	],
+	build: {
+		sourcemap: true
+	},
 	define: {
 		__GIT_SHA__: JSON.stringify(commit),
 		__COMMIT__: JSON.stringify(commit.slice(0, 7)),
@@ -61,7 +61,7 @@ export default defineConfig({
 	},
 	server: {
 		allowedHosts: ['reefpresence.app']
-    },
+	},
 	test: {
 		expect: { requireAssertions: true },
 		projects: [

@@ -98,7 +98,7 @@ export function buildDiscordActivity(
 					: presence.platform == PresencePlatform.NX
 						? 'Nintendo Switch'
 						: 'Nintendo Switch 2',
-			state_url: gameUri,
+			state_url: 'https://reefpresence.app',
 			assets: {
 				large_image: game.imageUri,
 				large_text: `${game.name} | RPC by Reef`,
