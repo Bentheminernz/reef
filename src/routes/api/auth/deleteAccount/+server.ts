@@ -80,7 +80,11 @@ export const POST: RequestHandler = async ({ locals, request, cookies }) => {
 		}
 	}
 
-	await removeBotFriendship(user);
+	const unfriended = await removeBotFriendship(user);
+
+	if (!unfriended) {
+		throw error(502, 'Could not remove the system bot friendship. Please try again.');
+	}
 
 	await db.transaction(async (tx) => {
 		await tx.delete(sessions).where(eq(sessions.nintendoAccountId, user.id));

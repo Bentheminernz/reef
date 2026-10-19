@@ -5,10 +5,10 @@ x-reef: &reef
   env_file: ${REEF_ENV_FILE:-/etc/coralsvelte/env}
   environment:
     HOST: 0.0.0.0
-    PORT: "3000"
+    PORT: '3000'
     HOME: /var/lib/coralsvelte
     XDG_CACHE_HOME: /var/lib/coralsvelte/.cache
-  user: "${CORALSVELTE_UID:?set CORALSVELTE_UID in /srv/coralsvelte/.env}:${CORALSVELTE_GID:?set CORALSVELTE_GID in /srv/coralsvelte/.env}"
+  user: '${CORALSVELTE_UID:?set CORALSVELTE_UID in /srv/coralsvelte/.env}:${CORALSVELTE_GID:?set CORALSVELTE_GID in /srv/coralsvelte/.env}'
   volumes:
     - /var/lib/coralsvelte:/var/lib/coralsvelte
   restart: unless-stopped
@@ -17,7 +17,7 @@ services:
   web:
     <<: *reef
     ports:
-      - "127.0.0.1:3000:3000"
+      - '127.0.0.1:3000:3000'
     healthcheck:
       test:
         - CMD
@@ -39,8 +39,8 @@ services:
 
   migrate:
     <<: *reef
-    profiles: ["tools"]
-    restart: "no"
+    profiles: ['tools']
+    restart: 'no'
     command:
       - node_modules/.bin/tsx
       - scripts/migrate.ts

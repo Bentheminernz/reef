@@ -1,8 +1,14 @@
 import { setTimeout as sleep } from 'node:timers/promises';
-import { count, eq, ne } from 'drizzle-orm';
+import { and, count, eq, isNull, ne } from 'drizzle-orm';
 import CoralApi, { CoralErrorResponse, CoralStatus, type Friends_4 } from 'nxapi/coral';
 import { db } from '$lib/server/db';
-import { nintendoAccount, systemBotUser, friendCodeData, siteSetting, discordLinks } from '$lib/server/db/schema';
+import {
+	nintendoAccount,
+	systemBotUser,
+	friendCodeData,
+	siteSetting,
+	discordLinks
+} from '$lib/server/db/schema';
 import type { SignupBlockedReason } from '$lib/types/signup';
 import {
 	getCoralApi,
@@ -67,18 +73,25 @@ function getSubFromSessionToken(sessionToken: string): string {
 type NintendoAccount = typeof nintendoAccount.$inferSelect;
 
 export async function ensureBotFriendship(account: NintendoAccount): Promise<BotFriendshipStatus> {
-    const discordLink = await db
-        .select()
-        .from(discordLinks)
-        .where(eq(discordLinks.nintendoAccountId, account.id))
-        .get();
+	const discordLink = await db
+		.select()
+		.from(discordLinks)
+		.where(eq(discordLinks.nintendoAccountId, account.id))
+		.get();
 
-    if (!discordLink) {
-        return 'no-discord-linked';
-    }
+	if (!discordLink) {
+		return 'no-discord-linked';
+	}
+
+	const botNsaIds = new Set(
+		(await db.select({ nsaId: systemBotUser.nsaId }).from(systemBotUser).all()).map(
+			(bot) => bot.nsaId
+		)
+	);
 
 	if (account.systemBotUserId != null) {
 		let stillFriends: boolean;
+		let assignedBotNsaId: string | null = null;
 
 		try {
 			const userCoral = await getCoralApi(account);
@@ -94,6 +107,7 @@ export async function ensureBotFriendship(account: NintendoAccount): Promise<Bot
 				);
 				stillFriends = false;
 			} else {
+				assignedBotNsaId = assignedBot.nsaId;
 				stillFriends = await userHasFriend(userCoral, account, assignedBot.nsaId);
 
 				if (!stillFriends) {
@@ -112,7 +126,26 @@ export async function ensureBotFriendship(account: NintendoAccount): Promise<Bot
 				await setBotFriendshipBlocked(account, false);
 			}
 
+			if (assignedBotNsaId != null) {
+				try {
+					const userCoral = await getCoralApi(account);
+					await removeStaleBotFriendships(userCoral, account, botNsaIds, assignedBotNsaId);
+				} catch (error) {
+					console.error('Failed to clean up stale system bot friendships', error);
+				}
+			}
+
 			return 'complete';
+		}
+
+		if (assignedBotNsaId != null) {
+			try {
+				const userCoral = await getCoralApi(account);
+				await userCoral.deleteFriend(assignedBotNsaId);
+				invalidateCoralFriends(account.id);
+			} catch (error) {
+				console.warn(`Could not unfriend previous system bot ${assignedBotNsaId}`, error);
+			}
 		}
 
 		await db
@@ -217,17 +250,39 @@ export async function ensureBotFriendship(account: NintendoAccount): Promise<Bot
 				}
 			}
 
-			await db
+			const claimed = await db
 				.update(nintendoAccount)
 				.set({
 					systemBotUserId: systemBot.id,
 					botFriendshipBlocked: false,
 					botFriendshipBlockedReason: null
 				})
-				.where(eq(nintendoAccount.id, account.id));
+				.where(and(eq(nintendoAccount.id, account.id), isNull(nintendoAccount.systemBotUserId)))
+				.returning({ id: nintendoAccount.id });
+
+			if (claimed.length === 0) {
+				const current = await db
+					.select({ systemBotUserId: nintendoAccount.systemBotUserId })
+					.from(nintendoAccount)
+					.where(eq(nintendoAccount.id, account.id))
+					.get();
+
+				if (current?.systemBotUserId !== systemBot.id) {
+					try {
+						await userCoral.deleteFriend(systemBot.nsaId);
+						invalidateCoralFriends(account.id);
+					} catch (error) {
+						console.error('Failed to undo duplicate system bot friendship', error);
+					}
+
+					continue;
+				}
+			}
 
 			account.systemBotUserId = systemBot.id;
 			account.botFriendshipBlocked = false;
+
+			await removeStaleBotFriendships(userCoral, account, botNsaIds, systemBot.nsaId);
 
 			invalidateCoralFriends(account.id);
 
@@ -289,6 +344,37 @@ async function userHasFriend(
 	const fresh = await getCoralFriends(account, userCoral);
 
 	return fresh.friends.some((friend) => friend.nsaId === nsaId);
+}
+
+async function removeStaleBotFriendships(
+	userCoral: CoralApi,
+	account: NintendoAccount,
+	botNsaIds: Set<string>,
+	keepNsaId: string
+): Promise<void> {
+	try {
+		const friendList = await getCoralFriends(account, userCoral);
+		const staleBots = friendList.friends.filter(
+			(friend) => friend.nsaId !== keepNsaId && botNsaIds.has(friend.nsaId)
+		);
+
+		if (staleBots.length === 0) return;
+
+		for (const friend of staleBots) {
+			try {
+				await userCoral.deleteFriend(friend.nsaId);
+				console.warn(
+					`Removed stale system bot friendship ${friend.nsaId} from account ${account.id}`
+				);
+			} catch (error) {
+				console.error(`Failed to remove stale system bot friendship ${friend.nsaId}`, error);
+			}
+		}
+
+		invalidateCoralFriends(account.id);
+	} catch (error) {
+		console.error('Failed to clean up stale system bot friendships', error);
+	}
 }
 
 async function acceptBotRequestIfPresent(userCoral: CoralApi, botNsaId: string): Promise<boolean> {
@@ -430,21 +516,43 @@ export async function retryBotFriendship(nintendoAccountId: string): Promise<Bot
 	return status;
 }
 
-export async function removeBotFriendship(account: NintendoAccount): Promise<void> {
-	if (account.systemBotUserId != null) {
-		try {
-			const systemBot = await db
-				.select({ nsaId: systemBotUser.nsaId })
-				.from(systemBotUser)
-				.where(eq(systemBotUser.id, account.systemBotUserId))
-				.get();
+/**
+ * Removes the system bot friendship for an account, trying the user side first and
+ * falling back to removing the user from the bot's friend list.
+ *
+ * Returns false only when a bot friendship exists and neither side could be unfriended.
+ * Callers that need to guarantee cleanup (e.g. account deletion) should check the result.
+ */
+export async function removeBotFriendship(account: NintendoAccount): Promise<boolean> {
+	let unfriended = true;
 
-			if (systemBot != null) {
+	if (account.systemBotUserId != null) {
+		const systemBot = await db
+			.select()
+			.from(systemBotUser)
+			.where(eq(systemBotUser.id, account.systemBotUserId))
+			.get();
+
+		if (systemBot != null) {
+			unfriended = false;
+
+			try {
 				const coral = await getCoralApi(account);
 				await coral.deleteFriend(systemBot.nsaId);
+				unfriended = true;
+			} catch (error) {
+				console.warn('Could not unfriend system bot from user side', error);
 			}
-		} catch (error) {
-			console.warn('Failed to unfriend system bot', error);
+
+			if (!unfriended && account.nsaId != null) {
+				try {
+					const botCoral = await getSystemBotCoralApi(systemBot.id);
+					await botCoral.deleteFriend(account.nsaId);
+					unfriended = true;
+				} catch (error) {
+					console.error('Could not unfriend system bot from bot side', error);
+				}
+			}
 		}
 	}
 
@@ -456,6 +564,8 @@ export async function removeBotFriendship(account: NintendoAccount): Promise<voi
 	account.systemBotUserId = null;
 	account.botFriendshipBlocked = false;
 	account.botFriendshipBlockedReason = null;
+
+	return unfriended;
 }
 
 export async function loginWithSessionToken(sessionToken: string, code: string) {
