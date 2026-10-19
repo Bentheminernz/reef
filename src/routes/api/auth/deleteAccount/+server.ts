@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 import { decodeJwt } from 'jose';
 import { NintendoAccountSessionAuthorisationCoral } from 'nxapi/coral';
 import { endDiscordHeadlessSession, revokeDiscordAuth } from '$lib/server/utils/DiscordAuth';
-import { clearAccountCaches, getCoralApi } from '$lib/server/coral';
+import { clearAccountCaches, getCoralApi, getSystemBotCoralApi } from '$lib/server/coral';
 import { db } from '$lib/server/db';
 import { discordLinks, nintendoAccount, sessions, systemBotUser } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
@@ -87,11 +87,28 @@ export const POST: RequestHandler = async ({ locals, request, cookies }) => {
 			.get();
 
 		if (systemBot) {
+			let unfriended = false;
+
 			try {
 				const coral = await getCoralApi(user);
 				await coral.deleteFriend(systemBot.nsaId);
+				unfriended = true;
 			} catch (cause) {
-				console.warn('[deleteAccount] Could not unfriend system bot', cause);
+				console.warn('[deleteAccount] Could not unfriend system bot from user side', cause);
+			}
+
+			if (!unfriended && user.nsaId != null) {
+				try {
+					const botCoral = await getSystemBotCoralApi(systemBot.id);
+					await botCoral.deleteFriend(user.nsaId);
+					unfriended = true;
+				} catch (cause) {
+					console.error('[deleteAccount] Could not unfriend system bot from bot side', cause);
+				}
+			}
+
+			if (!unfriended) {
+				throw error(502, 'Could not remove the system bot friendship. Please try again.');
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-import { count, eq, ne } from 'drizzle-orm';
+import { and, count, eq, isNull, ne } from 'drizzle-orm';
 import CoralApi, { CoralErrorResponse, CoralStatus, type Friends_4 } from 'nxapi/coral';
 import { db } from '$lib/server/db';
 import { nintendoAccount, systemBotUser, friendCodeData, siteSetting } from '$lib/server/db/schema';
@@ -67,8 +67,15 @@ function getSubFromSessionToken(sessionToken: string): string {
 type NintendoAccount = typeof nintendoAccount.$inferSelect;
 
 async function ensureBotFriendship(account: NintendoAccount): Promise<BotFriendshipStatus> {
+	const botNsaIds = new Set(
+		(await db.select({ nsaId: systemBotUser.nsaId }).from(systemBotUser).all()).map(
+			(bot) => bot.nsaId
+		)
+	);
+
 	if (account.systemBotUserId != null) {
 		let stillFriends: boolean;
+		let assignedBotNsaId: string | null = null;
 
 		try {
 			const userCoral = await getCoralApi(account);
@@ -84,6 +91,7 @@ async function ensureBotFriendship(account: NintendoAccount): Promise<BotFriends
 				);
 				stillFriends = false;
 			} else {
+				assignedBotNsaId = assignedBot.nsaId;
 				stillFriends = await userHasFriend(userCoral, account, assignedBot.nsaId);
 
 				if (!stillFriends) {
@@ -102,7 +110,26 @@ async function ensureBotFriendship(account: NintendoAccount): Promise<BotFriends
 				await setBotFriendshipBlocked(account, false);
 			}
 
+			if (assignedBotNsaId != null) {
+				try {
+					const userCoral = await getCoralApi(account);
+					await removeStaleBotFriendships(userCoral, account, botNsaIds, assignedBotNsaId);
+				} catch (error) {
+					console.error('Failed to clean up stale system bot friendships', error);
+				}
+			}
+
 			return 'complete';
+		}
+
+		if (assignedBotNsaId != null) {
+			try {
+				const userCoral = await getCoralApi(account);
+				await userCoral.deleteFriend(assignedBotNsaId);
+				invalidateCoralFriends(account.id);
+			} catch (error) {
+				console.warn(`Could not unfriend previous system bot ${assignedBotNsaId}`, error);
+			}
 		}
 
 		await db
@@ -206,17 +233,39 @@ async function ensureBotFriendship(account: NintendoAccount): Promise<BotFriends
 				}
 			}
 
-			await db
+			const claimed = await db
 				.update(nintendoAccount)
 				.set({
 					systemBotUserId: systemBot.id,
 					botFriendshipBlocked: false,
 					botFriendshipBlockedReason: null
 				})
-				.where(eq(nintendoAccount.id, account.id));
+				.where(and(eq(nintendoAccount.id, account.id), isNull(nintendoAccount.systemBotUserId)))
+				.returning({ id: nintendoAccount.id });
+
+			if (claimed.length === 0) {
+				const current = await db
+					.select({ systemBotUserId: nintendoAccount.systemBotUserId })
+					.from(nintendoAccount)
+					.where(eq(nintendoAccount.id, account.id))
+					.get();
+
+				if (current?.systemBotUserId !== systemBot.id) {
+					try {
+						await userCoral.deleteFriend(systemBot.nsaId);
+						invalidateCoralFriends(account.id);
+					} catch (error) {
+						console.error('Failed to undo duplicate system bot friendship', error);
+					}
+
+					continue;
+				}
+			}
 
 			account.systemBotUserId = systemBot.id;
 			account.botFriendshipBlocked = false;
+
+			await removeStaleBotFriendships(userCoral, account, botNsaIds, systemBot.nsaId);
 
 			invalidateCoralFriends(account.id);
 
@@ -278,6 +327,37 @@ async function userHasFriend(
 	const fresh = await getCoralFriends(account, userCoral);
 
 	return fresh.friends.some((friend) => friend.nsaId === nsaId);
+}
+
+async function removeStaleBotFriendships(
+	userCoral: CoralApi,
+	account: NintendoAccount,
+	botNsaIds: Set<string>,
+	keepNsaId: string
+): Promise<void> {
+	try {
+		const friendList = await getCoralFriends(account, userCoral);
+		const staleBots = friendList.friends.filter(
+			(friend) => friend.nsaId !== keepNsaId && botNsaIds.has(friend.nsaId)
+		);
+
+		if (staleBots.length === 0) return;
+
+		for (const friend of staleBots) {
+			try {
+				await userCoral.deleteFriend(friend.nsaId);
+				console.warn(
+					`Removed stale system bot friendship ${friend.nsaId} from account ${account.id}`
+				);
+			} catch (error) {
+				console.error(`Failed to remove stale system bot friendship ${friend.nsaId}`, error);
+			}
+		}
+
+		invalidateCoralFriends(account.id);
+	} catch (error) {
+		console.error('Failed to clean up stale system bot friendships', error);
+	}
 }
 
 async function acceptBotRequestIfPresent(userCoral: CoralApi, botNsaId: string): Promise<boolean> {
