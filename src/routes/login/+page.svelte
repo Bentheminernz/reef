@@ -5,18 +5,26 @@
 	import type { PageProps } from './$types';
 	import UserKey from '@lucide/svelte/icons/user-key';
 	import ReefIcon from '$lib/assets/ReefIcon.svg';
+	import { m } from '$lib/paraglide/messages';
+	import { PasskeyError } from '$lib/types/errors';
 
 	let { data, form }: PageProps = $props();
 
 	let passkeyMessage = $state('');
 	let authenticating = $state(false);
 
-	const nintendoSteps = [
-		'Open the Nintendo sign-in page and log in.',
-		'Pick the Nintendo Account you want to use.',
-		'Right-click “Select this person” and choose “Copy Link”. On a phone, long-press instead.',
-		'Paste the link below and continue.'
-	];
+	const errorMessages = {
+		nintendo_link: () => m.nintendo_login_error_invalid_link(),
+		invalid_link: () => m.nintendo_login_error_link_mismatch(),
+		generic: () => m.common_error_generic()
+	} as const;
+
+	const nintendoSteps: string[] = $derived([
+		m.login_nintendo_guide_p1(),
+		m.login_nintendo_guide_p2(),
+		m.login_nintendo_guide_p3(),
+		m.login_nintendo_guide_p4()
+	]);
 
 	async function signInWithPasskey() {
 		passkeyMessage = '';
@@ -24,14 +32,14 @@
 
 		try {
 			if (!window.isSecureContext || !browserSupportsWebAuthn()) {
-				passkeyMessage = 'Passkeys require localhost or a secure HTTPS connection.';
+				passkeyMessage = m.login_error_passkey_insecure();
 				return;
 			}
 
 			const optionsResponse = await fetch('/api/passkeys/authentication/options', {
 				method: 'POST'
 			});
-			if (!optionsResponse.ok) throw new Error('Could not start passkey sign-in');
+			if (!optionsResponse.ok) throw new PasskeyError('start_failed');
 
 			const optionsJSON = await optionsResponse.json();
 			const response = await startAuthentication({ optionsJSON });
@@ -41,15 +49,16 @@
 				body: JSON.stringify(response)
 			});
 
-			if (!verificationResponse.ok) throw new Error('Passkey sign-in failed');
+			if (!verificationResponse.ok) throw new PasskeyError('failed');
 			await goto(resolve('/'));
 		} catch (error) {
-			passkeyMessage =
-				error instanceof Error && error.name === 'NotAllowedError'
-					? 'Passkey sign-in was cancelled.'
-					: error instanceof Error
-						? error.message
-						: 'Passkey sign-in failed.';
+			if (error instanceof PasskeyError && error.code === 'start_failed') {
+				passkeyMessage = m.login_error_passkey_start_failed();
+			} else if (error instanceof Error && error.name === 'NotAllowedError') {
+				passkeyMessage = m.login_error_passkey_cancelled();
+			} else {
+				passkeyMessage = m.login_error_passkey_failed();
+			}
 		} finally {
 			authenticating = false;
 		}
@@ -57,13 +66,12 @@
 
 	const accordionItems: {
 		title: string;
-		intro: string;
+		paragraphs: string[];
 		endpoints?: string[];
-	}[] = [
+	}[] = $derived([
 		{
-			title: 'Why is Discord asking for so many scary permissions?',
-			intro:
-				'Unfortunately Discord has discontinued their activities.write scope for applications.\nThis means the only way to write activities is via the Social SDK. This SDK is designed so Discord can be implemented into games, which is why it needs so many scopes.\nHowever, Reef only uses a very small subset of these scopes. Below are the current Discord APIs that Reef accesses:',
+			title: m.faq_discord_scopes_title(),
+			paragraphs: [m.faq_discord_scopes_p1(), m.faq_discord_scopes_p2(), m.faq_discord_scopes_p3()],
 			endpoints: [
 				'/oauth2/authorize',
 				'/api/oauth2/token',
@@ -74,21 +82,14 @@
 			]
 		},
 		{
-			title: 'How are my Nintendo tokens stored? Can you see them?',
-			intro:
-				'Your sign-in details, the Nintendo session token and Switch Online access tokens Reef uses to fetch your presence and friends, plus the webview cookies for game services, are all encrypted before they are saved, those values only ever live in the database as ciphertext.\n\n' +
-				'Encryption keys are kept confidential, are never logged, and are not stored in the database or its backups, so a stolen database copy is useless on its own. Stored data is also tamper-evident: if any of it is altered or forged, Reef refuses to decrypt it.\n\n' +
-				'Tokens are only decrypted for a split second, in memory, when Reef needs to talk to Nintendo on your behalf. Nothing is ever written back in plaintext, and the app has no admin view, API or export that can display your tokens.\n\n' +
-				'Your Nintendo Account ID is stored in the clear, but that is a public identifier, not a secret. Tokens are only ever sent to Nintendo\u2019s servers (and to nxapi-znca-api, the service that decrypts and re-encrypts Nintendo Switch App requests, see the link above). Deleting your account (Settings -> Delete account) removes all of it.'
+			title: m.faq_tokens_title(),
+			paragraphs: [m.faq_tokens_p1(), m.faq_tokens_p2(), m.faq_tokens_p3(), m.faq_tokens_p4()]
 		},
 		{
-			title: 'Will I get banned?',
-			intro:
-				'Most likely not. Nobody has been banned yet for legitimately using third-party clients (including nxapi).\n\n' +
-				'However, a small subset of users was banned from SplatNet 3 in 2023 for attempting to exploit elements of SplatNet 3. ' +
-				'This only resulted in a ban from SplatNet 3, no other Nintendo services were affected, including their accounts or consoles.'
+			title: m.faq_ban_title(),
+			paragraphs: [m.faq_ban_p1(), m.faq_ban_p2()]
 		}
-	];
+	]);
 
 	let openIndex = $state<number | null>(0);
 </script>
@@ -129,8 +130,8 @@
 					<UserKey />
 				</div>
 				<div>
-					<h2 id="passkey-heading" class="font-semibold">Passkey</h2>
-					<p class="text-sm opacity-65">Sign in with biometrics</p>
+					<h2 id="passkey-heading" class="font-semibold">{m.login_passkey_title()}</h2>
+					<p class="text-sm opacity-65">{m.login_passkey_subtitle()}</p>
 				</div>
 			</div>
 
@@ -140,7 +141,7 @@
 				onclick={signInWithPasskey}
 				disabled={authenticating}
 			>
-				{authenticating ? 'Signing in...' : 'Sign in with a passkey'}
+				{authenticating ? m.login_passkey_submit_loading() : m.login_passkey_submit()}
 			</button>
 
 			{#if passkeyMessage}
@@ -149,7 +150,7 @@
 		</div>
 	</section>
 
-	<div class="divider text-xs opacity-60">or sign in with Nintendo</div>
+	<div class="divider text-xs opacity-60">{m.login_method_divider()}</div>
 
 	<section
 		aria-labelledby="nintendo-heading"
@@ -171,11 +172,13 @@
 
 			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 			<a href={data.authoriseUrl} target="_blank" rel="noopener" class="btn w-full btn-outline">
-				Open Nintendo sign-in page
+				{m.login_nintendo_open_signin_button()}
 			</a>
 
 			{#if form?.message}
-				<p class="text-sm text-error" aria-live="polite">{form.message}</p>
+				<p class="text-sm text-error" aria-live="polite">
+					{(errorMessages[form.message as keyof typeof errorMessages] ?? errorMessages.generic)()}
+				</p>
 			{/if}
 
 			<form method="POST" action="?/login" class="flex flex-col gap-2">
@@ -183,13 +186,15 @@
 				<input type="hidden" name="state" value={data.state} />
 				<input type="hidden" name="verifier" value={data.verifier} />
 
-				<label class="text-sm font-medium" for="redirect-uri">Authorisation link</label>
+				<label class="text-sm font-medium" for="redirect-uri"
+					>{m.login_nintendo_redirect_label()}</label
+				>
 				<input
 					id="redirect-uri"
 					class="input w-full"
 					name="redirectUri"
 					value={typeof form?.redirectUri === 'string' ? form.redirectUri : ''}
-					placeholder="Paste the copied link"
+					placeholder={m.login_nintendo_redirect_placeholder()}
 					autocomplete="off"
 					autocapitalize="off"
 					autocorrect="off"
@@ -197,34 +202,30 @@
 					required
 				/>
 
-				<button class="btn w-full btn-primary" type="submit">Continue</button>
+				<button class="btn w-full btn-primary" type="submit">{m.common_continue()}</button>
 			</form>
 
 			<p class="text-xs opacity-65">
 				{#if data.availableSystemBots.length > 0}
-					Once you sign up one of these users <code class="rounded bg-base-200 px-1 font-mono"
-						>{data.availableSystemBots.join(', ')}</code
-					>
-					will be added to your friends list. This is our system user so your presence can be shown on
-					Discord.
+					{m.login_system_bots_available({ bots: data.availableSystemBots.join(', ') })}
 				{:else}
-					All of our system users are full right now.
+					{m.login_system_bots_full()}
 				{/if}
 				<br /><br />
-				Your account is created automatically the first time you sign in. By signing up, you agree to
-				our
-				<a class="link link-primary" href={resolve('/privacy')}>Privacy Policy</a>.
+				{m.login_account_created()}
+				<a class="link link-primary" href={resolve('/privacy')}>{m.login_privacy_policy()}</a>.
 				<br /><br />
-				This service is provided by nxapi and the nxapi-znca-api. Information regarding these services
-				are provided
+				{m.login_service_provided()}
 				<a
 					class="link link-primary"
 					href="https://markdownpreview.github.io/?https://raw.githubusercontent.com/samuelthomas2774/nxapi-znca-api/refs/heads/docs/docs/end-user-help.md"
-					>here</a
+					>{m.login_service_info_link()}</a
 				>
 				<br /><br />
-				Need support?
-				<a class="link link-primary" href={data.discordInvite} target="_blank">Join the Discord!</a>
+				{m.login_support()}
+				<a class="link link-primary" href={data.discordInvite} target="_blank"
+					>{m.login_join_discord()}</a
+				>
 			</p>
 
 			<div class="join join-vertical bg-base-100">
@@ -243,7 +244,11 @@
 							{item.title}
 						</button>
 						<div class="collapse-content flex flex-col gap-3 text-sm">
-							<p class="whitespace-pre-line">{item.intro}</p>
+							<div class="space-y-4">
+								{#each item.paragraphs as paragraph, i (i)}
+									<p>{paragraph}</p>
+								{/each}
+							</div>
 
 							{#if item.endpoints}
 								<ul class="flex flex-col gap-1.5">

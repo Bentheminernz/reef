@@ -156,3 +156,6 @@ local.db-shm
 local.db-wal
 src/lib/assets/icons/
 src/lib/assets/lottie/
+# Paraglide
+src/lib/paraglide
+project.inlang/cache/

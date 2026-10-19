@@ -1,0 +1,53 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"login_passkey_title": "Passkey",
+	"login_passkey_subtitle": "Sign in with biometrics",
+	"login_passkey_submit": "Sign in with a passkey",
+	"login_passkey_submit_loading": "Signing in...",
+
+	"login_method_divider": "or sign in with Nintendo",
+
+	"login_nintendo_guide_p1": "Open the Nintendo sign-in page and log in.",
+	"login_nintendo_guide_p2": "Pick the Nintendo Account you want to use.",
+	"login_nintendo_guide_p3": "Right-click \"Select this person\" and choose \"Copy Link\". On a phone, long-press instead.",
+	"login_nintendo_guide_p4": "Paste the link below and continue",
+
+	"login_nintendo_open_signin_button": "Open Nintendo sign-in page",
+	"login_nintendo_redirect_label": "Authorisation Link",
+	"login_nintendo_redirect_placeholder": "Paste the copied link",
+
+	"login_system_bots_available": "Once you sign up, one of these users ({bots}) will be added to your friends list. This is our system user so your presence can be shown on Discord.",
+	"login_system_bots_full": "All of our system users are full right now.",
+	"login_account_created": "Your account is created automatically the first time you sign in. By signing up, you agree to our",
+	"login_privacy_policy": "Privacy Policy",
+	"login_service_provided": "This service is provided by nxapi and the nxapi-znca-api. Information regarding these services is provided",
+	"login_service_info_link": "here",
+	"login_support": "Need support?",
+	"login_join_discord": "Join the Discord!",
+
+	"login_error_passkey_insecure": "Passkeys aren't available in this browser or connection.",
+	"login_error_passkey_start_failed": "Could not start passkey sign-in.",
+	"login_error_passkey_failed": "Passkey sign-in failed.",
+	"login_error_passkey_cancelled": "Passkey sign-in was cancelled.",
+
+	"faq_discord_scopes_title": "Why is Discord asking for so many scary permissions?",
+	"faq_discord_scopes_p1": "Unfortunately Discord has discontinued their activities.write scope for applications.",
+	"faq_discord_scopes_p2": "This means the only way to write activities is via the Social SDK. This SDK is designed so Discord can be implemented into games, which is why it needs so many scopes.",
+	"faq_discord_scopes_p3": "However, Reef only uses a very small subset of these scopes. Below are the current Discord APIs that Reef accesses:",
+
+	"faq_tokens_title": "How are my Nintendo tokens stored? Can you see them?",
+	"faq_tokens_p1": "Your sign-in details, the Nintendo session token and Switch Online access tokens Reef uses to fetch your presence and friends, plus the webview cookies for game services, are all encrypted before they are saved, those values only ever live in the database as ciphertext.",
+	"faq_tokens_p2": "Encryption keys are kept confidential, are never logged, and are not stored in the database or its backups, so a stolen database copy is useless on its own. Stored data is also tamper-evident: if any of it is altered or forged, Reef refuses to decrypt it.",
+	"faq_tokens_p3": "Tokens are only decrypted for a split second, in memory, when Reef needs to talk to Nintendo on your behalf. Nothing is ever written back in plaintext, and the app has no admin view, API or export that can display your tokens.",
+	"faq_tokens_p4": "Your Nintendo Account ID is stored in the clear, but that is a public identifier, not a secret. Tokens are only ever sent to Nintendo’s servers (and to nxapi-znca-api, the service that decrypts and re-encrypts Nintendo Switch App requests, see the link above). Deleting your account (Settings -> Delete account) removes all of it.",
+
+	"faq_ban_title": "Will I get banned?",
+	"faq_ban_p1": "Most likely not. Nobody has been banned yet for legitimately using third-party clients (including nxapi).",
+	"faq_ban_p2": "However, a small subset of users was banned from SplatNet 3 in 2023 for attempting to exploit elements of SplatNet 3. This only resulted in a ban from SplatNet 3, no other Nintendo services were affected, including their accounts or consoles.",
+
+	"nintendo_login_error_invalid_link": "That doesn't look like a Nintendo authorisation link. Refresh this page, and try the Nintendo sign-in again, make sure to copy the full link.",
+	"nintendo_login_error_link_mismatch": "That link could not be used. Refresh this page, and try the Nintendo sign-in again.",
+
+	"common_continue": "Continue",
+	"common_error_generic": "Something went wrong. Please try again."
+}

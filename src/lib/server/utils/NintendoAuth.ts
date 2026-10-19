@@ -11,6 +11,11 @@ import {
 } from '$lib/server/coral';
 import { acceptPrivacyPolicy, getCurrentPrivacyPolicy } from '$lib/server/policy';
 import type { NintendoAccountSessionToken } from 'nxapi/nintendo-account';
+import {
+	NintendoSwitchNotLinkedError,
+	SignUpDisabledError,
+	SignUpLimitReached
+} from '$lib/types/errors';
 
 const FRIEND_LIMIT = 300;
 export const MAX_ACCOUNTS_PER_SYSTEM_BOT = FRIEND_LIMIT;
@@ -31,27 +36,6 @@ export function systemBotHasRoom(bot: SystemBotCapacity): boolean {
 	const used = bot.friendCount ?? bot.assignedAccounts;
 
 	return used < MAX_ACCOUNTS_PER_SYSTEM_BOT;
-}
-
-export class SignUpDisabledError extends Error {
-	constructor() {
-		super('Sign ups are disabled');
-		this.name = 'SignUpDisabledError';
-	}
-}
-
-export class SignUpLimitReached extends Error {
-	constructor() {
-		super('Maximum amount of users has been reached');
-		this.name = 'SignUpLimitReached';
-	}
-}
-
-export class NintendoSwitchNotLinkedError extends Error {
-	constructor() {
-		super("This account isn't linked to a Nintendo Switch console.");
-		this.name = 'NintendoSwitchNotLinkedError';
-	}
 }
 
 function isNsaNotLinkedError(error: unknown): boolean {

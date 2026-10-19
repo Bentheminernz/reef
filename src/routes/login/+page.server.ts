@@ -5,25 +5,18 @@ import {
 	type NintendoAccountSessionToken
 } from 'nxapi/nintendo-account';
 import type { PageServerLoad, Actions } from './$types';
-import {
-	loginWithSessionToken,
-	systemBotHasRoom,
-	SignUpDisabledError,
-	SignUpLimitReached,
-	NintendoSwitchNotLinkedError
-} from '$lib/server/utils/NintendoAuth';
+import { loginWithSessionToken, systemBotHasRoom } from '$lib/server/utils/NintendoAuth';
 import { createSession } from '$lib/server/session';
 import { dev } from '$app/environment';
 import { fail, redirect } from '@sveltejs/kit';
 import { count, eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { nintendoAccount, siteSetting, systemBotUser } from '$lib/server/db/schema';
-
-const NINTENDO_LINK_ERROR =
-	'That link could not be used. Open the Nintendo sign-in page again and copy a new link.';
-
-const INVALID_LINK_ERROR =
-	"That doesn't look like a Nintendo authorisation link. Open the Nintendo sign-in page, copy the full link, and paste it again.";
+import {
+	NintendoSwitchNotLinkedError,
+	SignUpDisabledError,
+	SignUpLimitReached
+} from '$lib/types/errors';
 
 function parseRedirectLink(redirectUri: string): URLSearchParams | null {
 	try {
@@ -92,18 +85,19 @@ export const actions: Actions = {
 
 		const params = parseRedirectLink(redirectUri);
 
-		const failWithLink = (message: string) => fail(400, { message, redirectUri });
+		const failWithLink = (message: 'nintendo_link' | 'invalid_link') =>
+			fail(400, { message, redirectUri });
 
 		if (!authoriseUrl || !state || !verifier) {
-			return failWithLink(NINTENDO_LINK_ERROR);
+			return failWithLink('nintendo_link');
 		}
 
 		if (!params) {
-			return failWithLink(INVALID_LINK_ERROR);
+			return failWithLink('invalid_link');
 		}
 
 		if (params.get('state') !== state) {
-			return failWithLink(NINTENDO_LINK_ERROR);
+			return failWithLink('nintendo_link');
 		}
 
 		let naSession: NintendoAccountSessionToken;
@@ -117,11 +111,11 @@ export const actions: Actions = {
 			naSession = await authenticator.getSessionToken(params);
 		} catch (error) {
 			if (isExpectedLoginError(error)) {
-				return failWithLink(NINTENDO_LINK_ERROR);
+				return failWithLink('nintendo_link');
 			}
 
 			console.error('Nintendo sign-in exchange failed', error);
-			return failWithLink(NINTENDO_LINK_ERROR);
+			return failWithLink('nintendo_link');
 		}
 
 		try {
@@ -158,7 +152,7 @@ export const actions: Actions = {
 			}
 
 			console.error('Nintendo sign-in failed', error);
-			return failWithLink(NINTENDO_LINK_ERROR);
+			return failWithLink('nintendo_link');
 		}
 
 		return redirect(302, '/');

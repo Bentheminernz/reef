@@ -1,3 +1,4 @@
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { sentrySvelteKit } from '@sentry/sveltekit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
@@ -40,15 +41,14 @@ export default defineConfig({
 					config.include.push('../drizzle.config.ts');
 				}
 			},
-			version: {
-				name: commit,
-				pollInterval: 60_000
-			},
-			experimental: {
-				instrumentation: {
-					server: true
-				}
-			}
+			version: { name: commit, pollInterval: 60_000 },
+			experimental: { instrumentation: { server: true } }
+		}),
+
+		paraglideVitePlugin({
+			project: './project.inlang',
+			outdir: './src/lib/paraglide',
+			emitTsDeclarations: true
 		})
 	],
 	build: {

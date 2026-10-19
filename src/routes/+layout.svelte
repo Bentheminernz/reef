@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { locales, localizeHref } from '$lib/paraglide/runtime.js';
 	import './layout.css';
 	import { page } from '$app/stores';
 	import favicon from '$lib/assets/favicon.png';
@@ -27,6 +28,7 @@
 
 <svelte:head>
 	<link rel="icon" type="image/png" sizes="128x128" href={favicon} />
+
 	<link rel="apple-touch-icon" sizes="180x180" href={appleTouchIcon} />
 
 	<title>{title}</title>
@@ -52,3 +54,10 @@
      The content is generated from our own schema object, never user input. -->
 <!-- eslint-disable-next-line svelte/no-at-html-tags -->
 {@html websiteJsonHtml}
+
+<div style="display:none">
+	{#each locales as locale (locale)}
+		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+		<a href={localizeHref($page.url.pathname, { locale })}>{locale}</a>
+	{/each}
+</div>
