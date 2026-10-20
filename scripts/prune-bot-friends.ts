@@ -2,7 +2,7 @@ import '$lib/server/nxapi';
 import { parseArgs } from 'node:util';
 import { eq, isNotNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { nintendoAccount, systemBotUser } from '$lib/server/db/schema';
+import { discordLinks, nintendoAccount, systemBotUser } from '$lib/server/db/schema';
 import { getSystemBotCoralApi } from '$lib/server/coral';
 
 const DEFAULT_CONCURRENCY = 4;
@@ -22,7 +22,7 @@ if (!values.all && (values.bot == null || values.bot.length === 0)) {
 		'Usage: npm run script scripts/prune-bot-friends.ts -- --bot <id|naId> [--bot <id|naId> ...] | --all [--apply]'
 	);
 	console.error(
-		'Unfriends every friend whose nsaId is not in nintendo_accounts. Dry run unless --apply.'
+		'Unfriends every friend whose nsaId is not in nintendo_accounts or has no Discord link. Dry run unless --apply.'
 	);
 	process.exit(1);
 }
@@ -51,10 +51,11 @@ async function forEachWithConcurrency<T>(
 const accountRows = await db
 	.select({ nsaId: nintendoAccount.nsaId })
 	.from(nintendoAccount)
+	.innerJoin(discordLinks, eq(discordLinks.nintendoAccountId, nintendoAccount.id))
 	.where(isNotNull(nintendoAccount.nsaId))
 	.all();
 
-const accountNsaIds = new Set(accountRows.map((row) => row.nsaId));
+const enrolledNsaIds = new Set(accountRows.map((row) => row.nsaId));
 
 const allBots = await db.select().from(systemBotUser).all();
 
@@ -83,7 +84,7 @@ if (bots.length === 0) {
 const botNsaIds = new Set(allBots.map((bot) => bot.nsaId));
 
 console.log(
-	`${accountNsaIds.size} nintendo account nsaId(s) in the database, ${bots.length} system bot(s) selected.`
+	`${enrolledNsaIds.size} Discord-enrolled nsaId(s) in the database, ${bots.length} system bot(s) selected.`
 );
 
 if (!values.apply) {
@@ -99,7 +100,7 @@ for (const bot of bots) {
 	const friendList = await coral.getFriendList();
 	const friends = friendList.friends;
 
-	const orphans = friends.filter((friend) => !accountNsaIds.has(friend.nsaId));
+	const orphans = friends.filter((friend) => !enrolledNsaIds.has(friend.nsaId));
 
 	const includeBots = values['include-bots'] === true;
 
@@ -110,7 +111,7 @@ for (const bot of bots) {
 		: orphans.filter((friend) => !botNsaIds.has(friend.nsaId));
 
 	console.log(
-		`Bot ${bot.naId} (${bot.id}): ${friends.length} friend(s), ${orphans.length} not in nintendo_accounts, ${removable.length} to remove.`
+		`Bot ${bot.naId} (${bot.id}): ${friends.length} friend(s), ${orphans.length} not Discord-enrolled, ${removable.length} to remove.`
 	);
 
 	if (skippedBots.length > 0) {

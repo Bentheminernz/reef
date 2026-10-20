@@ -42,7 +42,7 @@
 		discordLinkError?: string | null;
 	} = $props();
 
-	const supporters: string[] = ['Azteea', 'mia', 'Kiarocki', 'Dycool', 'FloGamer64'];
+	const supporters: string[] = ['Azteea', 'mia', 'Kiarocki', 'Dycool', 'FloGamer64', 'NakuKoro', 'nekeo'];
 </script>
 
 <div class="w-full py-8 sm:py-10">

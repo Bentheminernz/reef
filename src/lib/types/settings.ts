@@ -44,8 +44,8 @@ interface DataAccessLogSummary {
 }
 
 interface SiteSettingsSummary {
-    signUpEnabled: boolean;
-    discordEnrolmentEnabled: boolean;
+	signUpEnabled: boolean;
+	discordEnrolmentEnabled: boolean;
 	discordEnrolmentLimit: number;
 	discordInviteLink: string;
 }

@@ -460,10 +460,12 @@
 
 				<div class="min-w-0 flex-1">
 					<p class="font-semibold">
-					    No Discord account linked
+						No Discord account linked
 
 						{#if !discordEnrolmentsEnabled}
-							<span class="badge badge-error px-1 font-normal">Enrolment is currently disabled.</span>
+							<span class="badge px-1 font-normal badge-error"
+								>Enrolment is currently disabled.</span
+							>
 						{/if}
 					</p>
 					<p class="mt-0.5 text-sm opacity-65">

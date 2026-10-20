@@ -67,19 +67,25 @@
 
 			<div class="border-t border-base-300"></div>
 
+			<input
+				type="hidden"
+				name="discordEnrolmentEnabled"
+				value={adminSettings?.discordEnrolmentEnabled ? 'true' : 'false'}
+				bind:this={discordEnrolmentEnabledHidden}
+			/>
+
 			<label class="flex items-center gap-4 p-5">
 				<span class="min-w-0 flex-1">
-					<span class="block font-semibold">Allow Discord Enrolments</span>
-					<span class="mt-0.5 block text-sm opacity-65">
-						Let users enrol w/ discord
-					</span>
+					<span class="block font-semibold">Allow Discord enrolments</span>
+					<span class="mt-0.5 block text-sm opacity-65">Let users enrol w/ dicord</span>
 				</span>
 
 				<input
 					type="checkbox"
 					class="toggle toggle-primary"
 					checked={adminSettings?.discordEnrolmentEnabled ?? false}
-					onchange={(event) => setHiddenFlag(discordEnrolmentEnabledHidden, event.currentTarget.checked)}
+					onchange={(event) =>
+						setHiddenFlag(discordEnrolmentEnabledHidden, event.currentTarget.checked)}
 				/>
 			</label>
 
@@ -89,7 +95,7 @@
 				<span class="min-w-0 flex-1">
 					<span class="block font-semibold">Discord enrolment limit</span>
 					<span class="mt-0.5 block text-sm opacity-65">
-						Maximum number of users that can be enrolled with discor
+						Maximum number of users that can be enrolled with Discord.
 					</span>
 				</span>
 

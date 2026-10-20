@@ -188,20 +188,18 @@ export const load = (async ({ locals, depends, isDataRequest, url }) => {
 
 	const admin = isAdmin(locals.nintendoAccount.naId);
 
-    const siteSettings = await db
-        .select()
-        .from(siteSetting)
-        .where(eq(siteSetting.id, 1))
-        .get();
+	const siteSettings = await db.select().from(siteSetting).where(eq(siteSetting.id, 1)).get();
 
-    const adminSettings = admin ? (siteSettings ?? {
-        signUpEnabled: false,
-        discordEnrolmentEnabled: false,
-        discordEnrolmentLimit: 100,
-        discordInviteLink: 'https://discord.gg/bmCyVeF6Vw'
-    }) : null;
+	const adminSettings = admin
+		? (siteSettings ?? {
+				signUpEnabled: false,
+				discordEnrolmentEnabled: false,
+				discordEnrolmentLimit: 100,
+				discordInviteLink: 'https://discord.gg/bmCyVeF6Vw'
+			})
+		: null;
 
-    const deferredData = !isDataRequest
+	const deferredData = !isDataRequest
 		? { friends, media, webServices, userInfo, notifications }
 		: await Promise.all([friends, media, webServices, userInfo, notifications]).then(
 				([friends, media, webServices, userInfo, notifications]) => ({
@@ -212,22 +210,19 @@ export const load = (async ({ locals, depends, isDataRequest, url }) => {
 					notifications
 				}),
 				() => ({ friends, media, webServices, userInfo, notifications })
-        );
+			);
 
-    const [{ count: totalLinks }] = await db
-        .select({ count: count() })
-        .from(discordLinks);
+	const [{ count: totalLinks }] = await db.select({ count: count() }).from(discordLinks);
 
-    const discordEnrolmentEnabled =
-        !!siteSettings?.discordEnrolmentEnabled &&
-        siteSettings.discordEnrolmentLimit > totalLinks
+	const discordEnrolmentEnabled =
+		!!siteSettings?.discordEnrolmentEnabled && siteSettings.discordEnrolmentLimit > totalLinks;
 
-    const discordErrorCode = url.searchParams.get('discordError');
-    const discordLinkError = discordErrorCode
-        ? (DISCORD_LINK_ERROR_MESSAGES[discordErrorCode] ?? DISCORD_LINK_ERROR_MESSAGES.unassigned)
-        : null;
+	const discordErrorCode = url.searchParams.get('discordError');
+	const discordLinkError = discordErrorCode
+		? (DISCORD_LINK_ERROR_MESSAGES[discordErrorCode] ?? DISCORD_LINK_ERROR_MESSAGES.unassigned)
+		: null;
 
-    return {
+	return {
 		...deferredData,
 		signupBlocked: locals.nintendoAccount.botFriendshipBlocked ?? false,
 		signupBlockedReason: locals.nintendoAccount.botFriendshipBlockedReason ?? null,
@@ -240,7 +235,7 @@ export const load = (async ({ locals, depends, isDataRequest, url }) => {
 		allowAssets: locals.nintendoAccount.accessNintendoAssets,
 		isAdmin: admin,
 		adminSettings,
-        userPermissions: locals.nintendoAccount.currentUserPermissions,
+		userPermissions: locals.nintendoAccount.currentUserPermissions,
 		discordEnrolmentEnabled,
 		discordLinkError
 	};

@@ -202,8 +202,8 @@
 
 			<p class="text-xs opacity-65">
 				{#if data.availableSystemBots.length > 0}
-					When you link a Discord account, one of these users <code class="rounded bg-base-200 px-1 font-mono"
-						>{data.availableSystemBots.join(', ')}</code
+					When you link a Discord account, one of these users <code
+						class="rounded bg-base-200 px-1 font-mono">{data.availableSystemBots.join(', ')}</code
 					>
 					will be added to your friends list. This is our system user so your presence can be shown on
 					Discord.

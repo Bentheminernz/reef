@@ -85,7 +85,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				await db.transaction(async (tx) => {
 					await tx.delete(presenceSessions).where(eq(presenceSessions.discordLinkId, link.id));
 					await tx.delete(discordLinks).where(eq(discordLinks.id, link.id));
-                });
+				});
 
 				if (account != null) await removeBotFriendship(account);
 

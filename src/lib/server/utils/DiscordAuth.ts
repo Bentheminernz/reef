@@ -24,20 +24,6 @@ export class DiscordApiError extends Error {
 	}
 }
 
-export class DiscordEnrolmentLimit extends Error {
-	constructor() {
-		super('Maximum amount of users have enrolled with Discord.');
-		this.name = 'DiscordEnrolmentLimitReached';
-	}
-}
-
-export class DiscordEnrolmentDisabled extends Error {
-    constructor() {
-        super('Linking your Discord account to Reef is currently disabled')
-        this.name = 'DiscordEnrolmentDisabled'
-    }
-}
-
 interface DiscordErrorBody {
 	code?: number;
 	message?: string;

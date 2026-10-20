@@ -17,9 +17,7 @@
 	let enabling = $state(false);
 
 	$effect(() => {
-		// The friend-limit view lists friends to unfriend; the requests-disabled
-		// view has its own flow and doesn't need the list.
-		if (reason !== 'requests-disabled') {
+		if (reason === 'friend-limit') {
 			void loadFriends();
 		}
 	});
@@ -167,7 +165,9 @@
 	aria-modal="true"
 	aria-labelledby={reason === 'requests-disabled'
 		? 'requests-disabled-title'
-		: 'friend-limit-title'}
+		: reason === 'friend-limit'
+			? 'friend-limit-title'
+			: 'enrolment-failed-title'}
 >
 	<div
 		class="flex max-h-full w-full max-w-md flex-col gap-4 overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-xl"
@@ -182,7 +182,7 @@
 					</div>
 					<div>
 						<h2 id="requests-disabled-title" class="text-lg font-bold">Turn on friend requests</h2>
-						<p class="text-xs opacity-65">Sign-up step 2 of 2</p>
+						<p class="text-xs opacity-65">Discord enrolment</p>
 					</div>
 				</div>
 
@@ -226,7 +226,7 @@
 					I've enabled them on my Switch — try again
 				</button>
 			</footer>
-		{:else}
+		{:else if reason === 'friend-limit'}
 			<header class="flex flex-col gap-2 px-5 pt-5">
 				<div class="flex items-center gap-3">
 					<div
@@ -236,7 +236,7 @@
 					</div>
 					<div>
 						<h2 id="friend-limit-title" class="text-lg font-bold">Make room for our system user</h2>
-						<p class="text-xs opacity-65">Sign-up step 2 of 2</p>
+						<p class="text-xs opacity-65">Discord enrolment</p>
 					</div>
 				</div>
 
@@ -300,7 +300,44 @@
 					onclick={continueSignup}
 					disabled={retrying}
 				>
-					{retrying ? 'Adding system user…' : "I've made room — continue sign up"}
+					{retrying ? 'Adding system user…' : "I've made room — try again"}
+				</button>
+			</footer>
+		{:else}
+			<header class="flex flex-col gap-2 px-5 pt-5">
+				<div class="flex items-center gap-3">
+					<div
+						class="grid size-11 shrink-0 place-items-center rounded-full bg-warning/15 text-warning"
+					>
+						<CircleAlert class="size-6" aria-hidden="true" />
+					</div>
+					<div>
+						<h2 id="enrolment-failed-title" class="text-lg font-bold">
+							{reason === 'no-capacity' ? 'No room right now' : "Couldn't add our system user"}
+						</h2>
+						<p class="text-xs opacity-65">Discord enrolment</p>
+					</div>
+				</div>
+
+				<p class="text-sm opacity-80">
+					{reason === 'no-capacity'
+						? 'All of our system users are full right now. Please try again later.'
+						: "We couldn't add our system user to your friends list. Please try again in a moment."}
+				</p>
+			</header>
+
+			<footer class="flex flex-col gap-2 border-t border-base-300 px-5 py-4">
+				{#if actionError}
+					<p class="text-sm text-error" aria-live="polite">{actionError}</p>
+				{/if}
+
+				<button
+					class="btn w-full btn-primary"
+					type="button"
+					onclick={continueSignup}
+					disabled={retrying}
+				>
+					{retrying ? 'Adding system user…' : 'Try again'}
 				</button>
 			</footer>
 		{/if}

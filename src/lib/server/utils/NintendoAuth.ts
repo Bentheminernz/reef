@@ -80,6 +80,10 @@ export async function ensureBotFriendship(account: NintendoAccount): Promise<Bot
 		.get();
 
 	if (!discordLink) {
+		if (account.systemBotUserId != null) {
+			await removeBotFriendship(account);
+		}
+
 		return 'no-discord-linked';
 	}
 
@@ -182,6 +186,7 @@ export async function ensureBotFriendship(account: NintendoAccount): Promise<Bot
 		console.warn(
 			`No system bot user with fewer than ${MAX_ACCOUNTS_PER_SYSTEM_BOT} friends available`
 		);
+		await setBotFriendshipBlocked(account, true, 'no-capacity');
 		return 'no-capacity';
 	}
 
@@ -194,6 +199,7 @@ export async function ensureBotFriendship(account: NintendoAccount): Promise<Bot
 
 	if (account.nsaId != null && userLookUp.nsaId !== account.nsaId) {
 		console.error('User lookup and user nsaId do not match');
+		await setBotFriendshipBlocked(account, true, 'unassigned');
 		return 'unassigned';
 	}
 
@@ -212,6 +218,7 @@ export async function ensureBotFriendship(account: NintendoAccount): Promise<Bot
 		userFriendList = await getCoralFriends(account, userCoral);
 	} catch (error) {
 		console.error('Failed to read the user friend list', error);
+		await setBotFriendshipBlocked(account, true, 'unassigned');
 		return 'unassigned';
 	}
 
@@ -300,10 +307,11 @@ export async function ensureBotFriendship(account: NintendoAccount): Promise<Bot
 	}
 
 	if (sawFullBot) {
-		await setBotFriendshipBlocked(account, true, 'friend-limit');
-		return 'friend-limit';
+		await setBotFriendshipBlocked(account, true, 'no-capacity');
+		return 'no-capacity';
 	}
 
+	await setBotFriendshipBlocked(account, true, 'unassigned');
 	return 'unassigned';
 }
 
@@ -552,6 +560,10 @@ export async function removeBotFriendship(account: NintendoAccount): Promise<boo
 				} catch (error) {
 					console.error('Could not unfriend system bot from bot side', error);
 				}
+			}
+
+			if (unfriended) {
+				invalidateCoralFriends(account.id);
 			}
 		}
 	}
