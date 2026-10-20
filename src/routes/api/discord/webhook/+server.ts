@@ -1,7 +1,8 @@
 import nacl from 'tweetnacl';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
-import { discordLinks, presenceSessions } from '$lib/server/db/schema';
+import { discordLinks, nintendoAccount, presenceSessions } from '$lib/server/db/schema';
+import { removeBotFriendship } from '$lib/server/utils/NintendoAuth';
 import { eq } from 'drizzle-orm';
 
 const PUBLIC_KEY = process.env.DISCORD_CLIENT_PUBLIC_KEY;
@@ -69,16 +70,24 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		try {
 			const link = await db
-				.select({ id: discordLinks.id })
+				.select({ id: discordLinks.id, nintendoAccountId: discordLinks.nintendoAccountId })
 				.from(discordLinks)
 				.where(eq(discordLinks.discordUserId, userId))
 				.get();
 
 			if (link != null) {
+				const account = await db
+					.select()
+					.from(nintendoAccount)
+					.where(eq(nintendoAccount.id, link.nintendoAccountId))
+					.get();
+
 				await db.transaction(async (tx) => {
 					await tx.delete(presenceSessions).where(eq(presenceSessions.discordLinkId, link.id));
 					await tx.delete(discordLinks).where(eq(discordLinks.id, link.id));
 				});
+
+				if (account != null) await removeBotFriendship(account);
 
 				console.log(`[discord-webhook] Discord user ${userId} deauthorized; link removed`);
 			}

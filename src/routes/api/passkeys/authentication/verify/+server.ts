@@ -8,7 +8,11 @@ import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { passkeys } from '$lib/server/db/schema';
 import { createSession } from '$lib/server/session';
-import { ensureFriendCode, ensureUserPermissions } from '$lib/server/utils/NintendoAuth';
+import {
+	ensureFriendCode,
+	ensureUserPermissions,
+	retryBotFriendship
+} from '$lib/server/utils/NintendoAuth';
 import { getOrigin, getRPID } from '$lib/server/webauthn';
 
 export async function POST({ request, cookies, url }) {
@@ -61,6 +65,10 @@ export async function POST({ request, cookies, url }) {
 
 	void ensureFriendCode(credential.nintendoAccountId);
 	void ensureUserPermissions(credential.nintendoAccountId);
+
+	void retryBotFriendship(credential.nintendoAccountId).catch((cause) =>
+		console.error('Failed to repair system bot friendship', cause)
+	);
 
 	return json({ verified: true });
 }

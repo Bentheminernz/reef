@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, sql } from 'drizzle-orm';
 import type { LayoutServerLoad } from './$types';
 import {
 	getCoralApi,
@@ -29,7 +29,17 @@ function parseStoredTimestamp(value: number | string): Date {
 	return new Date(typeof value === 'number' ? value * 1000 : value);
 }
 
-export const load = (async ({ locals, depends, isDataRequest }) => {
+const DISCORD_LINK_ERROR_MESSAGES: Record<string, string> = {
+	'friend-limit':
+		"You're at Nintendo's 300-friend limit, so we couldn't add our system user. Remove a friend on your Switch, then link Discord again.",
+	'requests-disabled':
+		"Friend requests are turned off on your Nintendo account, so we couldn't add our system user. Turn them on, then link Discord again.",
+	'no-capacity':
+		'Reef has no room for new Discord presence users right now. Please try again later.',
+	unassigned: "We couldn't add our system user to your friends list. Please try again in a moment."
+};
+
+export const load = (async ({ locals, depends, isDataRequest, url }) => {
 	if (!locals.nintendoAccount) {
 		throw redirect(302, '/login');
 	}
@@ -178,10 +188,13 @@ export const load = (async ({ locals, depends, isDataRequest }) => {
 
 	const admin = isAdmin(locals.nintendoAccount.naId);
 
+	const siteSettings = await db.select().from(siteSetting).where(eq(siteSetting.id, 1)).get();
+
 	const adminSettings = admin
-		? ((await db.select().from(siteSetting).where(eq(siteSetting.id, 1)).get()) ?? {
+		? (siteSettings ?? {
 				signUpEnabled: false,
-				signUpLimit: 100,
+				discordEnrolmentEnabled: false,
+				discordEnrolmentLimit: 100,
 				discordInviteLink: 'https://discord.gg/bmCyVeF6Vw'
 			})
 		: null;
@@ -199,6 +212,16 @@ export const load = (async ({ locals, depends, isDataRequest }) => {
 				() => ({ friends, media, webServices, userInfo, notifications })
 			);
 
+	const [{ count: totalLinks }] = await db.select({ count: count() }).from(discordLinks);
+
+	const discordEnrolmentEnabled =
+		!!siteSettings?.discordEnrolmentEnabled && siteSettings.discordEnrolmentLimit > totalLinks;
+
+	const discordErrorCode = url.searchParams.get('discordError');
+	const discordLinkError = discordErrorCode
+		? (DISCORD_LINK_ERROR_MESSAGES[discordErrorCode] ?? DISCORD_LINK_ERROR_MESSAGES.unassigned)
+		: null;
+
 	return {
 		...deferredData,
 		signupBlocked: locals.nintendoAccount.botFriendshipBlocked ?? false,
@@ -212,6 +235,8 @@ export const load = (async ({ locals, depends, isDataRequest }) => {
 		allowAssets: locals.nintendoAccount.accessNintendoAssets,
 		isAdmin: admin,
 		adminSettings,
-		userPermissions: locals.nintendoAccount.currentUserPermissions
+		userPermissions: locals.nintendoAccount.currentUserPermissions,
+		discordEnrolmentEnabled,
+		discordLinkError
 	};
 }) satisfies LayoutServerLoad;

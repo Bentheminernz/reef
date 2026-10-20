@@ -221,12 +221,14 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const signUpEnabled = formData.get('signUpEnabled') === 'true';
-		const signUpLimitField = formData.get('signUpLimit');
-		const signUpLimit = signUpLimitField == null ? 100 : Number(signUpLimitField);
+		const discordEnrolmentEnabled = formData.get('discordEnrolmentEnabled') === 'true';
+		const discordEnrolmentLimitField = formData.get('discordEnrolmentLimit');
+		const discordEnrolmentLimit =
+			discordEnrolmentLimitField == null ? 100 : Number(discordEnrolmentLimitField);
 
-		if (!Number.isInteger(signUpLimit) || signUpLimit < 0) {
+		if (!Number.isInteger(discordEnrolmentLimit) || discordEnrolmentLimit < 0) {
 			console.error('Invalid Request for Update Adming Setting');
-			return fail(400, { message: 'Sign-up limit must be a whole number of 0 or more.' });
+			return fail(400, { message: 'Enrolment limit must be a whole number of 0 or more.' });
 		}
 
 		const discordInviteLinkField = formData.get('discordInviteLink');
@@ -240,10 +242,10 @@ export const actions: Actions = {
 
 		const [updated] = await db
 			.insert(siteSetting)
-			.values({ signUpEnabled, signUpLimit, discordInviteLink })
+			.values({ signUpEnabled, discordEnrolmentEnabled, discordEnrolmentLimit, discordInviteLink })
 			.onConflictDoUpdate({
 				target: siteSetting.id,
-				set: { signUpEnabled, signUpLimit, discordInviteLink }
+				set: { signUpEnabled, discordEnrolmentEnabled, discordEnrolmentLimit, discordInviteLink }
 			})
 			.returning();
 

@@ -5,7 +5,10 @@ import {
 	type NintendoAccountSessionToken
 } from 'nxapi/nintendo-account';
 import type { PageServerLoad, Actions } from './$types';
-import { loginWithSessionToken, systemBotHasRoom } from '$lib/server/utils/NintendoAuth';
+import {
+	loginWithSessionToken,
+	systemBotHasRoom,
+} from '$lib/server/utils/NintendoAuth';
 import { createSession } from '$lib/server/session';
 import { dev } from '$app/environment';
 import { fail, redirect } from '@sveltejs/kit';
@@ -132,14 +135,6 @@ export const actions: Actions = {
 			if (error instanceof SignUpDisabledError) {
 				return fail(403, {
 					message: 'Sign ups are currently closed. Existing accounts can still sign in.',
-					redirectUri
-				});
-			}
-
-			if (error instanceof SignUpLimitReached) {
-				return fail(403, {
-					message:
-						"We've hit our sign-up limit for now. Please check back soon, as spots open up quite frequently :)",
 					redirectUri
 				});
 			}

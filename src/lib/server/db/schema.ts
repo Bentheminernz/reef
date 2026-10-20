@@ -301,7 +301,10 @@ export const siteSetting = sqliteTable(
 	{
 		id: integer('id').primaryKey().default(1),
 		signUpEnabled: integer('sign_up_enabled', { mode: 'boolean' }).notNull().default(false),
-		signUpLimit: integer('sign_up_limit').notNull().default(100),
+		discordEnrolmentEnabled: integer('discord_enrolment_enabled', { mode: 'boolean' })
+			.notNull()
+			.default(false),
+		discordEnrolmentLimit: integer('discord_enrolment_limit').notNull().default(100),
 		discordInviteLink: text('discord_invite_link')
 			.notNull()
 			.default('https://discord.gg/bmCyVeF6Vw')

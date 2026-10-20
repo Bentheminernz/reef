@@ -169,6 +169,13 @@
       "when": 1791833378183,
       "tag": "0023_hard_garia",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1792048207821,
+      "tag": "0024_petite_ulik",
+      "breakpoints": true
     }
   ]
 }

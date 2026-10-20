@@ -25,7 +25,9 @@
 		isAdmin = false,
 		adminSettings = null,
 		discordInviteLink = 'https://discord.gg/bmCyVeF6Vw',
-		userPermissions
+		userPermissions,
+		discordEnrolmentsEnabled,
+		discordLinkError = null
 	}: {
 		passkeys: PasskeySummary[];
 		discordLink?: DiscordLinkSummary;
@@ -36,9 +38,11 @@
 		adminSettings?: SiteSettingsSummary | null;
 		discordInviteLink?: string;
 		userPermissions?: UserPermissionsSummary | null;
+		discordEnrolmentsEnabled: boolean;
+		discordLinkError?: string | null;
 	} = $props();
 
-	const supporters: string[] = ['Azteea', 'mia', 'Kiarocki', 'Dycool', 'FloGamer64'];
+	const supporters: string[] = ['Azteea', 'mia', 'Kiarocki', 'Dycool', 'FloGamer64', 'NakuKoro', 'nekeo'];
 </script>
 
 <div class="w-full py-8 sm:py-10">
@@ -49,7 +53,14 @@
 
 	<div class="mt-8 space-y-8">
 		<PasskeySettings {passkeys} />
-		<DiscordSettings {discordLink} {presenceSession} {visibleSystemBotInfo} {userPermissions} />
+		<DiscordSettings
+			{discordLink}
+			{presenceSession}
+			{visibleSystemBotInfo}
+			{userPermissions}
+			{discordEnrolmentsEnabled}
+			{discordLinkError}
+		/>
 		<PrivacySettings {userPermissions} />
 		<DataAccessLogsSettings {dataAccessLogs} />
 		<AccountSettings {visibleSystemBotInfo} />
