@@ -106,14 +106,14 @@
 
 	{#if !data.signUpEnabled}
 		<div class="alert alert-error" role="alert">
-			<span>Sign ups are currently disabled. Please check back later!</span>
+			<span>{m.login_signups_disabled_banner()}</span>
 		</div>
 	{/if}
 
 	{#if data.declined}
 		<div class="alert alert-warning" role="alert">
 			<span>
-				You must accept the <a class="link" href={resolve('/privacy')}>Privacy Policy</a> to use Reef.
+				{m.login_privacy_policy_declined_before()} <a class="link" href={resolve('/privacy')}>{m.common_privacy_policy()}</a> {m.login_privacy_policy_declined_after()}
 			</span>
 		</div>
 	{/if}
@@ -213,7 +213,7 @@
 				{/if}
 				<br /><br />
 				{m.login_account_created()}
-				<a class="link link-primary" href={resolve('/privacy')}>{m.login_privacy_policy()}</a>.
+				<a class="link link-primary" href={resolve('/privacy')}>{m.common_privacy_policy()}</a>.
 				<br /><br />
 				{m.login_service_provided()}
 				<a

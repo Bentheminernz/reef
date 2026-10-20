@@ -1,5 +1,6 @@
 <script lang="ts">
 	import PolicyDocument from '$lib/components/PolicyDocument.svelte';
+	import { m } from '$lib/paraglide/messages';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -9,9 +10,9 @@
 
 <div class="mx-auto flex max-w-3xl flex-col gap-4">
 	<header class="flex flex-col gap-1">
-		<h1 class="text-2xl font-bold">Updated Privacy Policy</h1>
+		<h1 class="text-2xl font-bold">{m.updated_privacy_policy_title()}</h1>
 		<p class="text-sm opacity-65">
-			Please review and accept the Privacy Policy to continue using Reef.
+			{m.updated_privacy_policy_subtitle()}
 		</p>
 	</header>
 

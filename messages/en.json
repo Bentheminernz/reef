@@ -16,14 +16,16 @@
 	"login_nintendo_redirect_label": "Authorisation Link",
 	"login_nintendo_redirect_placeholder": "Paste the copied link",
 
-	"login_system_bots_available": "Once you sign up, one of these users ({bots}) will be added to your friends list. This is our system user so your presence can be shown on Discord.",
-	"login_system_bots_full": "All of our system users are full right now.",
+	"login_system_bots_available": "When you link a Discord account, one of these users ({bots}) will be added to your friends list. This is our system user so your presence can be shown on.",
+	"login_system_bots_full": "All of our system users are full right now, so Discord linking is unavailable.",
 	"login_account_created": "Your account is created automatically the first time you sign in. By signing up, you agree to our",
-	"login_privacy_policy": "Privacy Policy",
 	"login_service_provided": "This service is provided by nxapi and the nxapi-znca-api. Information regarding these services is provided",
 	"login_service_info_link": "here",
 	"login_support": "Need support?",
 	"login_join_discord": "Join the Discord!",
+	"login_privacy_policy_declined_before": "You must accept the ",
+	"login_privacy_policy_declined_after": "to use Reef.",
+	"login_signups_disabled_banner": "Sign ups are currently disabled. Please check back later!",
 
 	"login_error_passkey_insecure": "Passkeys aren't available in this browser or connection.",
 	"login_error_passkey_start_failed": "Could not start passkey sign-in.",
@@ -48,6 +50,11 @@
 	"nintendo_login_error_invalid_link": "That doesn't look like a Nintendo authorisation link. Refresh this page, and try the Nintendo sign-in again, make sure to copy the full link.",
 	"nintendo_login_error_link_mismatch": "That link could not be used. Refresh this page, and try the Nintendo sign-in again.",
 
+	"updated_privacy_policy_title": "Updated Privacy Policy",
+	"updated_privacy_policy_subtitle": "Please review and accept the Privacy Policy to contine using Reef.",
+	"updated_privacy_policy_agree": "I have read and agree to the Privacy Policy, version {version}.",
+
 	"common_continue": "Continue",
+	"common_privacy_policy": "Privacy Policy",
 	"common_error_generic": "Something went wrong. Please try again."
 }
