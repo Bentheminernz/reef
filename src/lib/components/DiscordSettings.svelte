@@ -20,6 +20,7 @@
 		visibleSystemBotInfo,
 		userPermissions,
 		discordEnrolmentsEnabled,
+		systemBotCapacityAvailable = true,
 		discordLinkError = null
 	}: {
 		discordLink?: DiscordLinkSummary;
@@ -27,6 +28,7 @@
 		visibleSystemBotInfo?: VisibleSystemBotInfo | null;
 		userPermissions?: UserPermissionsSummary | null;
 		discordEnrolmentsEnabled: boolean;
+		systemBotCapacityAvailable?: boolean;
 		discordLinkError?: string | null;
 	} = $props();
 
@@ -84,7 +86,10 @@
 		try {
 			const response = await fetch('/api/discord/generate-url');
 
-			if (!response.ok) throw new Error('Could not start Discord linking.');
+			if (!response.ok) {
+				const body = (await response.json().catch(() => null)) as { message?: string } | null;
+				throw new Error(body?.message ?? 'Could not start Discord linking.');
+			}
 
 			const { authoriseURL } = await response.json();
 
@@ -466,10 +471,17 @@
 							<span class="badge px-1 font-normal badge-error"
 								>Enrolment is currently disabled.</span
 							>
+						{:else if !systemBotCapacityAvailable}
+							<span class="badge px-1 font-normal badge-warning">No system users available.</span>
 						{/if}
 					</p>
 					<p class="mt-0.5 text-sm opacity-65">
-						Connect a Discord account to enable Discord features.
+						{#if !discordEnrolmentsEnabled || systemBotCapacityAvailable}
+							Connect a Discord account to enable Discord features.
+						{:else}
+							All of our system users are full right now, so Discord linking is unavailable. Please
+							try again later.
+						{/if}
 					</p>
 				</div>
 
@@ -477,7 +489,7 @@
 					class="btn w-full btn-primary sm:w-auto"
 					type="button"
 					onclick={linkAccount}
-					disabled={linking || !discordEnrolmentsEnabled}
+					disabled={linking || !discordEnrolmentsEnabled || !systemBotCapacityAvailable}
 				>
 					{linking ? 'Redirecting...' : 'Link Discord account'}
 				</button>

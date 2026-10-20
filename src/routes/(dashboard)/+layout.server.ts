@@ -24,6 +24,7 @@ import {
 import type { VisibleSystemBotInfo } from '$lib/types/settings';
 import type { CoralSvelteNotice, Notification } from '$lib/types/notifications';
 import { isAdmin } from '$lib/server/admin';
+import { hasSystemBotCapacity } from '$lib/server/utils/NintendoAuth';
 
 function parseStoredTimestamp(value: number | string): Date {
 	return new Date(typeof value === 'number' ? value * 1000 : value);
@@ -92,6 +93,9 @@ export const load = (async ({ locals, depends, isDataRequest, url }) => {
 		.from(discordLinks)
 		.where(eq(discordLinks.nintendoAccountId, locals.nintendoAccount.id))
 		.get();
+
+	const systemBotCapacityAvailable =
+		linkedDiscordAccount == null ? await hasSystemBotCapacity(locals.nintendoAccount) : true;
 
 	const presenceSession = linkedDiscordAccount
 		? await db
@@ -224,7 +228,9 @@ export const load = (async ({ locals, depends, isDataRequest, url }) => {
 
 	return {
 		...deferredData,
-		signupBlocked: locals.nintendoAccount.botFriendshipBlocked ?? false,
+		signupBlocked:
+			(locals.nintendoAccount.botFriendshipBlocked ?? false) &&
+			locals.nintendoAccount.botFriendshipBlockedReason !== 'no-capacity',
 		signupBlockedReason: locals.nintendoAccount.botFriendshipBlockedReason ?? null,
 		passkeys: registeredPasskeys,
 		discordLink: linkedDiscordAccount,
@@ -237,6 +243,7 @@ export const load = (async ({ locals, depends, isDataRequest, url }) => {
 		adminSettings,
 		userPermissions: locals.nintendoAccount.currentUserPermissions,
 		discordEnrolmentEnabled,
+		systemBotCapacityAvailable,
 		discordLinkError
 	};
 }) satisfies LayoutServerLoad;

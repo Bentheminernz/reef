@@ -441,6 +441,7 @@
 				adminSettings={data.adminSettings}
 				userPermissions={data.userPermissions}
 				discordEnrolmentsEnabled={data.discordEnrolmentEnabled}
+				systemBotCapacityAvailable={data.systemBotCapacityAvailable}
 				discordLinkError={data.discordLinkError}
 			/>
 		</div>

@@ -74,7 +74,9 @@
 			if (!linked) {
 				const linkResponse = await fetch('/api/discord/generate-url');
 
-				if (!linkResponse.ok) throw new Error('Could not start Discord linking.');
+				if (!linkResponse.ok) {
+					throw new Error(await errorMessage(linkResponse, 'Could not start Discord linking.'));
+				}
 
 				const { authoriseURL } = (await linkResponse.json()) as { authoriseURL?: string };
 

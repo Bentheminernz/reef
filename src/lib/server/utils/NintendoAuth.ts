@@ -72,6 +72,39 @@ function getSubFromSessionToken(sessionToken: string): string {
 
 type NintendoAccount = typeof nintendoAccount.$inferSelect;
 
+async function getAvailableSystemBots(account: NintendoAccount) {
+	const candidates = await db
+		.select({
+			id: systemBotUser.id,
+			naId: systemBotUser.naId,
+			nsaId: systemBotUser.nsaId,
+			friendCount: systemBotUser.friendCount,
+			assignedAccounts: count(nintendoAccount.id)
+		})
+		.from(systemBotUser)
+		.leftJoin(nintendoAccount, eq(nintendoAccount.systemBotUserId, systemBotUser.id))
+		.where(ne(systemBotUser.naId, account.naId))
+		.groupBy(systemBotUser.id)
+		.all();
+
+	return candidates.filter(systemBotHasRoom).sort((a, b) => {
+		const aUsed = a.friendCount ?? a.assignedAccounts;
+		const bUsed = b.friendCount ?? b.assignedAccounts;
+
+		return aUsed - bUsed;
+	});
+}
+
+export async function hasSystemBotCapacity(account: NintendoAccount): Promise<boolean> {
+	return (await getAvailableSystemBots(account)).length > 0;
+}
+
+async function clearNoCapacityBlock(account: NintendoAccount) {
+	if (account.botFriendshipBlocked && account.botFriendshipBlockedReason === 'no-capacity') {
+		await setBotFriendshipBlocked(account, false);
+	}
+}
+
 export async function ensureBotFriendship(account: NintendoAccount): Promise<BotFriendshipStatus> {
 	const discordLink = await db
 		.select()
@@ -83,6 +116,8 @@ export async function ensureBotFriendship(account: NintendoAccount): Promise<Bot
 		if (account.systemBotUserId != null) {
 			await removeBotFriendship(account);
 		}
+
+		await clearNoCapacityBlock(account);
 
 		return 'no-discord-linked';
 	}
@@ -161,32 +196,13 @@ export async function ensureBotFriendship(account: NintendoAccount): Promise<Bot
 		account.botFriendshipBlocked = false;
 	}
 
-	const candidates = await db
-		.select({
-			id: systemBotUser.id,
-			naId: systemBotUser.naId,
-			nsaId: systemBotUser.nsaId,
-			friendCount: systemBotUser.friendCount,
-			assignedAccounts: count(nintendoAccount.id)
-		})
-		.from(systemBotUser)
-		.leftJoin(nintendoAccount, eq(nintendoAccount.systemBotUserId, systemBotUser.id))
-		.where(ne(systemBotUser.naId, account.naId))
-		.groupBy(systemBotUser.id)
-		.all();
-
-	const availableBots = candidates.filter(systemBotHasRoom).sort((a, b) => {
-		const aUsed = a.friendCount ?? a.assignedAccounts;
-		const bUsed = b.friendCount ?? b.assignedAccounts;
-
-		return aUsed - bUsed;
-	});
+	const availableBots = await getAvailableSystemBots(account);
 
 	if (availableBots.length === 0) {
 		console.warn(
 			`No system bot user with fewer than ${MAX_ACCOUNTS_PER_SYSTEM_BOT} friends available`
 		);
-		await setBotFriendshipBlocked(account, true, 'no-capacity');
+		await clearNoCapacityBlock(account);
 		return 'no-capacity';
 	}
 
@@ -307,7 +323,7 @@ export async function ensureBotFriendship(account: NintendoAccount): Promise<Bot
 	}
 
 	if (sawFullBot) {
-		await setBotFriendshipBlocked(account, true, 'no-capacity');
+		await clearNoCapacityBlock(account);
 		return 'no-capacity';
 	}
 
