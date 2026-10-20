@@ -202,13 +202,13 @@
 
 			<p class="text-xs opacity-65">
 				{#if data.availableSystemBots.length > 0}
-					Once you sign up one of these users <code class="rounded bg-base-200 px-1 font-mono"
-						>{data.availableSystemBots.join(', ')}</code
+					When you link a Discord account, one of these users <code
+						class="rounded bg-base-200 px-1 font-mono">{data.availableSystemBots.join(', ')}</code
 					>
 					will be added to your friends list. This is our system user so your presence can be shown on
 					Discord.
 				{:else}
-					All of our system users are full right now.
+					All of our system users are full right now, so Discord linking is unavailable.
 				{/if}
 				<br /><br />
 				Your account is created automatically the first time you sign in. By signing up, you agree to

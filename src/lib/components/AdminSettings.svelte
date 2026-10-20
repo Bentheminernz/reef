@@ -8,6 +8,7 @@
 	let message = $state('');
 	let saved = $state(false);
 	let signUpEnabledHidden = $state<HTMLInputElement>();
+	let discordEnrolmentEnabledHidden = $state<HTMLInputElement>();
 
 	const submit: SubmitFunction =
 		() =>
@@ -66,11 +67,35 @@
 
 			<div class="border-t border-base-300"></div>
 
+			<input
+				type="hidden"
+				name="discordEnrolmentEnabled"
+				value={adminSettings?.discordEnrolmentEnabled ? 'true' : 'false'}
+				bind:this={discordEnrolmentEnabledHidden}
+			/>
+
+			<label class="flex items-center gap-4 p-5">
+				<span class="min-w-0 flex-1">
+					<span class="block font-semibold">Allow Discord enrolments</span>
+					<span class="mt-0.5 block text-sm opacity-65">Let users enrol w/ dicord</span>
+				</span>
+
+				<input
+					type="checkbox"
+					class="toggle toggle-primary"
+					checked={adminSettings?.discordEnrolmentEnabled ?? false}
+					onchange={(event) =>
+						setHiddenFlag(discordEnrolmentEnabledHidden, event.currentTarget.checked)}
+				/>
+			</label>
+
+			<div class="border-t border-base-300"></div>
+
 			<label class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
 				<span class="min-w-0 flex-1">
-					<span class="block font-semibold">Sign-up limit</span>
+					<span class="block font-semibold">Discord enrolment limit</span>
 					<span class="mt-0.5 block text-sm opacity-65">
-						Maximum number of accounts that can be created.
+						Maximum number of users that can be enrolled with Discord.
 					</span>
 				</span>
 
@@ -78,9 +103,9 @@
 					type="number"
 					min="0"
 					step="1"
-					name="signUpLimit"
+					name="discordEnrolmentLimit"
 					class="input w-full sm:w-40"
-					value={adminSettings?.signUpLimit ?? 100}
+					value={adminSettings?.discordEnrolmentLimit ?? 100}
 				/>
 			</label>
 

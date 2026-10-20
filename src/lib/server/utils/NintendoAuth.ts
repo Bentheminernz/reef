@@ -1,7 +1,14 @@
+import { setTimeout as sleep } from 'node:timers/promises';
 import { and, count, eq, isNull, ne } from 'drizzle-orm';
 import CoralApi, { CoralErrorResponse, CoralStatus, type Friends_4 } from 'nxapi/coral';
 import { db } from '$lib/server/db';
-import { nintendoAccount, systemBotUser, friendCodeData, siteSetting } from '$lib/server/db/schema';
+import {
+	nintendoAccount,
+	systemBotUser,
+	friendCodeData,
+	siteSetting,
+	discordLinks
+} from '$lib/server/db/schema';
 import type { SignupBlockedReason } from '$lib/types/signup';
 import {
 	getCoralApi,
@@ -20,7 +27,13 @@ const NSA_NOT_LINKED = CoralStatus.NSA_NOT_LINKED;
 
 const PERMISSIONS_CACHE_TTL_MS = 5 * 60 * 1000;
 
-export type BotFriendshipStatus = 'complete' | 'friend-limit' | 'requests-disabled' | 'unassigned';
+export type BotFriendshipStatus =
+	| 'complete'
+	| 'friend-limit'
+	| 'requests-disabled'
+	| 'no-capacity'
+	| 'no-discord-linked'
+	| 'unassigned';
 
 export interface SystemBotCapacity {
 	friendCount: number | null;
@@ -37,13 +50,6 @@ export class SignUpDisabledError extends Error {
 	constructor() {
 		super('Sign ups are disabled');
 		this.name = 'SignUpDisabledError';
-	}
-}
-
-export class SignUpLimitReached extends Error {
-	constructor() {
-		super('Maximum amount of users has been reached');
-		this.name = 'SignUpLimitReached';
 	}
 }
 
@@ -66,7 +72,21 @@ function getSubFromSessionToken(sessionToken: string): string {
 
 type NintendoAccount = typeof nintendoAccount.$inferSelect;
 
-async function ensureBotFriendship(account: NintendoAccount): Promise<BotFriendshipStatus> {
+export async function ensureBotFriendship(account: NintendoAccount): Promise<BotFriendshipStatus> {
+	const discordLink = await db
+		.select()
+		.from(discordLinks)
+		.where(eq(discordLinks.nintendoAccountId, account.id))
+		.get();
+
+	if (!discordLink) {
+		if (account.systemBotUserId != null) {
+			await removeBotFriendship(account);
+		}
+
+		return 'no-discord-linked';
+	}
+
 	const botNsaIds = new Set(
 		(await db.select({ nsaId: systemBotUser.nsaId }).from(systemBotUser).all()).map(
 			(bot) => bot.nsaId
@@ -166,7 +186,8 @@ async function ensureBotFriendship(account: NintendoAccount): Promise<BotFriends
 		console.warn(
 			`No system bot user with fewer than ${MAX_ACCOUNTS_PER_SYSTEM_BOT} friends available`
 		);
-		return 'unassigned';
+		await setBotFriendshipBlocked(account, true, 'no-capacity');
+		return 'no-capacity';
 	}
 
 	const userCoral = await getCoralApi(account);
@@ -178,6 +199,7 @@ async function ensureBotFriendship(account: NintendoAccount): Promise<BotFriends
 
 	if (account.nsaId != null && userLookUp.nsaId !== account.nsaId) {
 		console.error('User lookup and user nsaId do not match');
+		await setBotFriendshipBlocked(account, true, 'unassigned');
 		return 'unassigned';
 	}
 
@@ -196,6 +218,7 @@ async function ensureBotFriendship(account: NintendoAccount): Promise<BotFriends
 		userFriendList = await getCoralFriends(account, userCoral);
 	} catch (error) {
 		console.error('Failed to read the user friend list', error);
+		await setBotFriendshipBlocked(account, true, 'unassigned');
 		return 'unassigned';
 	}
 
@@ -225,7 +248,8 @@ async function ensureBotFriendship(account: NintendoAccount): Promise<BotFriends
 
 				const botCoral = await getSystemBotCoralApi(systemBot.id);
 				await botCoral.sendFriendRequest(userLookUp.nsaId);
-				accepted = await acceptBotRequestIfPresent(userCoral, systemBot.nsaId);
+
+				accepted = await acceptBotRequestWithRetry(userCoral, systemBot.nsaId);
 
 				if (!accepted) {
 					console.error(`Friend request from system bot ${systemBot.naId} not found after sending`);
@@ -283,10 +307,11 @@ async function ensureBotFriendship(account: NintendoAccount): Promise<BotFriends
 	}
 
 	if (sawFullBot) {
-		await setBotFriendshipBlocked(account, true, 'friend-limit');
-		return 'friend-limit';
+		await setBotFriendshipBlocked(account, true, 'no-capacity');
+		return 'no-capacity';
 	}
 
+	await setBotFriendshipBlocked(account, true, 'unassigned');
 	return 'unassigned';
 }
 
@@ -370,6 +395,21 @@ async function acceptBotRequestIfPresent(userCoral: CoralApi, botNsaId: string):
 
 	await userCoral.acceptFriendRequest(botRequest.id);
 	return true;
+}
+
+async function acceptBotRequestWithRetry(
+	userCoral: CoralApi,
+	botNsaId: string,
+	attempts = 6,
+	delayMs = 1000
+): Promise<boolean> {
+	for (let attempt = 0; attempt < attempts; attempt++) {
+		if (await acceptBotRequestIfPresent(userCoral, botNsaId)) return true;
+
+		if (attempt < attempts - 1) await sleep(delayMs);
+	}
+
+	return false;
 }
 
 async function setBotFriendshipBlocked(
@@ -484,6 +524,62 @@ export async function retryBotFriendship(nintendoAccountId: string): Promise<Bot
 	return status;
 }
 
+/**
+ * Removes the system bot friendship for an account, trying the user side first and
+ * falling back to removing the user from the bot's friend list.
+ *
+ * Returns false only when a bot friendship exists and neither side could be unfriended.
+ * Callers that need to guarantee cleanup (e.g. account deletion) should check the result.
+ */
+export async function removeBotFriendship(account: NintendoAccount): Promise<boolean> {
+	let unfriended = true;
+
+	if (account.systemBotUserId != null) {
+		const systemBot = await db
+			.select()
+			.from(systemBotUser)
+			.where(eq(systemBotUser.id, account.systemBotUserId))
+			.get();
+
+		if (systemBot != null) {
+			unfriended = false;
+
+			try {
+				const coral = await getCoralApi(account);
+				await coral.deleteFriend(systemBot.nsaId);
+				unfriended = true;
+			} catch (error) {
+				console.warn('Could not unfriend system bot from user side', error);
+			}
+
+			if (!unfriended && account.nsaId != null) {
+				try {
+					const botCoral = await getSystemBotCoralApi(systemBot.id);
+					await botCoral.deleteFriend(account.nsaId);
+					unfriended = true;
+				} catch (error) {
+					console.error('Could not unfriend system bot from bot side', error);
+				}
+			}
+
+			if (unfriended) {
+				invalidateCoralFriends(account.id);
+			}
+		}
+	}
+
+	await db
+		.update(nintendoAccount)
+		.set({ systemBotUserId: null, botFriendshipBlocked: false, botFriendshipBlockedReason: null })
+		.where(eq(nintendoAccount.id, account.id));
+
+	account.systemBotUserId = null;
+	account.botFriendshipBlocked = false;
+	account.botFriendshipBlockedReason = null;
+
+	return unfriended;
+}
+
 export async function loginWithSessionToken(sessionToken: string, code: string) {
 	const naId = getSubFromSessionToken(sessionToken);
 
@@ -513,12 +609,6 @@ export async function loginWithSessionToken(sessionToken: string, code: string) 
 	} else {
 		if (!siteSettings?.signUpEnabled) {
 			throw new SignUpDisabledError();
-		}
-
-		const [{ total }] = await db.select({ total: count() }).from(nintendoAccount);
-
-		if (total >= siteSettings.signUpLimit) {
-			throw new SignUpLimitReached();
 		}
 
 		[account] = await db
