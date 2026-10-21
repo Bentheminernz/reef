@@ -27,6 +27,7 @@
 		discordInviteLink = 'https://discord.gg/bmCyVeF6Vw',
 		userPermissions,
 		discordEnrolmentsEnabled,
+		systemBotCapacityAvailable,
 		discordLinkError = null
 	}: {
 		passkeys: PasskeySummary[];
@@ -39,10 +40,19 @@
 		discordInviteLink?: string;
 		userPermissions?: UserPermissionsSummary | null;
 		discordEnrolmentsEnabled: boolean;
+		systemBotCapacityAvailable?: boolean;
 		discordLinkError?: string | null;
 	} = $props();
 
-	const supporters: string[] = ['Azteea', 'mia', 'Kiarocki', 'Dycool', 'FloGamer64', 'NakuKoro', 'nekeo'];
+	const supporters: string[] = [
+		'Azteea',
+		'mia',
+		'Kiarocki',
+		'Dycool',
+		'FloGamer64',
+		'NakuKoro',
+		'nekeo'
+	];
 </script>
 
 <div class="w-full py-8 sm:py-10">
@@ -59,6 +69,7 @@
 			{visibleSystemBotInfo}
 			{userPermissions}
 			{discordEnrolmentsEnabled}
+			{systemBotCapacityAvailable}
 			{discordLinkError}
 		/>
 		<PrivacySettings {userPermissions} />

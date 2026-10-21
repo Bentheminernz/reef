@@ -2,7 +2,7 @@ import { invalidateCoralFriends } from '$lib/server/coral.js';
 import { db } from '$lib/server/db/index.js';
 import { discordLinks, presenceSessions, siteSetting } from '$lib/server/db/schema.js';
 import { exchangeCallbackCode, fetchDiscordUser } from '$lib/server/utils/DiscordAuth.js';
-import { ensureBotFriendship } from '$lib/server/utils/NintendoAuth.js';
+import { ensureBotFriendship, hasSystemBotCapacity } from '$lib/server/utils/NintendoAuth.js';
 import { error, isHttpError, isRedirect, redirect } from '@sveltejs/kit';
 import { count, eq } from 'drizzle-orm';
 
@@ -57,6 +57,10 @@ export async function GET({ locals, cookies, url }) {
 	cookies.delete('discord_auth_state', {
 		path: '/'
 	});
+
+	if (!(await hasSystemBotCapacity(locals.nintendoAccount))) {
+		redirect(303, '/settings?discordError=no-capacity');
+	}
 
 	let linkId: string | null = null;
 
