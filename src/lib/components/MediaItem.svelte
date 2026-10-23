@@ -42,5 +42,5 @@
 			<p>huh</p>
 		{/if}
 	</div>
-	<p class="mt-1 line-clamp-1 font-semibold">{media.appName}</p>
+	<p class="mt-1 line-clamp-1 min-h-6 font-semibold">{media.appName}</p>
 </button>

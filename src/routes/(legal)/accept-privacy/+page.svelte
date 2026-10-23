@@ -37,7 +37,7 @@
 					bind:checked={agreed}
 				/>
 				<span class="text-sm">
-					I have read and agree to the Privacy Policy, version {data.version}.
+					{m.updated_privacy_policy_agree({ version: data.version })}
 				</span>
 			</label>
 
@@ -47,10 +47,10 @@
 
 			<div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
 				<button class="btn btn-ghost" type="submit" formaction="?/decline">
-					Decline and sign out
+					{m.updated_privacy_policy_button_decline()}
 				</button>
 				<button class="btn btn-primary" type="submit" formaction="?/accept" disabled={!agreed}>
-					Accept and continue
+					{m.updated_privacy_policy_button_agree()}
 				</button>
 			</div>
 		</form>

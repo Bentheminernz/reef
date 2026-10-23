@@ -18,11 +18,7 @@ import {
 } from '$lib/server/coral';
 import { acceptPrivacyPolicy, getCurrentPrivacyPolicy } from '$lib/server/policy';
 import type { NintendoAccountSessionToken } from 'nxapi/nintendo-account';
-import {
-	NintendoSwitchNotLinkedError,
-	SignUpDisabledError,
-	SignUpLimitReached
-} from '$lib/types/errors';
+import { ReefError } from '$lib/types/errors';
 
 const FRIEND_LIMIT = 300;
 export const MAX_ACCOUNTS_PER_SYSTEM_BOT = FRIEND_LIMIT;
@@ -608,7 +604,7 @@ export async function loginWithSessionToken(sessionToken: string, code: string) 
 		account.nintendoAccountSession = nintendoAccountSession;
 	} else {
 		if (!siteSettings?.signUpEnabled) {
-			throw new SignUpDisabledError();
+			throw new ReefError('sign_up_disabled');
 		}
 
 		[account] = await db
@@ -631,7 +627,7 @@ export async function loginWithSessionToken(sessionToken: string, code: string) 
 			await db.delete(nintendoAccount).where(eq(nintendoAccount.id, account.id));
 		}
 
-		throw new NintendoSwitchNotLinkedError();
+		throw new ReefError('switch_not_linked');
 	}
 
 	if (createdAccount) {

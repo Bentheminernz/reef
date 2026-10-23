@@ -9,6 +9,7 @@
 	import MediaSkeleton from '$lib/components/Skeletons/MediaSkeleton.svelte';
 	import { fade } from 'svelte/transition';
 	import type { PageProps } from './$types';
+	import { m } from '$lib/paraglide/messages';
 
 	let { data }: PageProps = $props();
 
@@ -28,7 +29,7 @@
 	}
 </script>
 
-<h1 class="text-xl font-bold">Friends</h1>
+<h1 class="text-xl font-bold">{m.home_header_friends()}</h1>
 <div class="grid">
 	{#await data.friends}
 		<div
@@ -58,7 +59,7 @@
 
 <hr class="border-0.5 my-4 border-gray-400/40" />
 
-<h1 class="mb-2 text-xl font-bold">Game Services</h1>
+<h1 class="text-xl font-bold mb-2">{m.home_header_gws()}</h1>
 <div class="grid grid-cols-[minmax(0,1fr)]">
 	{#await data.webServices}
 		<div
@@ -81,7 +82,7 @@
 
 <hr class="border-0.5 my-4 border-gray-400/40" />
 
-<h1 class="mb-2 text-xl font-bold">Media</h1>
+<h1 class="text-xl font-bold mb-2">{m.home_header_media()}</h1>
 <div class="grid">
 	{#await data.media}
 		<div

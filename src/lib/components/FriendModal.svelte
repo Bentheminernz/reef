@@ -5,6 +5,8 @@
 	import PlayLogItem from './PlayLogItem.svelte';
 	import { timeAgo } from '$lib/utils/timeAgo';
 	import getTitleIdFromEcUrl from '$lib/utils/getTitleIdFromEcUrl';
+	import { m } from '$lib/paraglide/messages';
+	import { errorMessage, ReefError } from '$lib/types/errors';
 
 	let {
 		friend,
@@ -16,12 +18,12 @@
 
 	let dialog = $state<HTMLDialogElement>();
 	let loading = $state(false);
-	let loadError = $state<string>();
+	let loadError = $state<ReefError>();
 	let result = $state<{ friend: Friend_4; playLog: Game[] }>();
 	let displayedFriend = $derived(result?.friend ?? friend);
 	let favouriteOverride = $state<{ nsaId: string; value: boolean }>();
 	let favouritePending = $state(false);
-	let favouriteError = $state('');
+	let favouriteError = $state<ReefError>();
 	let isFavourite = $derived(
 		favouriteOverride && favouriteOverride.nsaId === displayedFriend?.nsaId
 			? favouriteOverride.value
@@ -37,7 +39,10 @@
 	});
 
 	$effect(() => {
-		if (open) favouriteOverride = undefined;
+		if (open) {
+			favouriteOverride = undefined;
+			favouriteError = undefined;
+		}
 	});
 
 	$effect(() => {
@@ -56,20 +61,13 @@
 
 		try {
 			const response = await fetch(resolve('/api/friends/[nsaId]', { nsaId }), { signal });
-
-			if (!response.ok) {
-				throw new Error('Unable to load friend details');
-			}
+			if (!response.ok) throw await ReefError.fromResponse(response);
 
 			result = (await response.json()) as { friend: Friend_4; playLog: Game[] };
 		} catch (error) {
-			if (!signal.aborted) {
-				loadError = error instanceof Error ? error.message : 'Unable to load friend details';
-			}
+			if (!signal.aborted) loadError = ReefError.from(error);
 		} finally {
-			if (!signal.aborted) {
-				loading = false;
-			}
+			if (!signal.aborted) loading = false;
 		}
 	}
 
@@ -79,7 +77,7 @@
 		const nsaId = displayedFriend.nsaId;
 
 		favouritePending = true;
-		favouriteError = '';
+		favouriteError = undefined;
 		favouriteOverride = { nsaId, value: next };
 
 		try {
@@ -88,10 +86,7 @@
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ favourite: next })
 			});
-
-			if (!response.ok) {
-				throw new Error(await responseMessage(response, 'Could not update favourite'));
-			}
+			if (!response.ok) throw await ReefError.fromResponse(response);
 
 			const data = (await response.json()) as { friend?: Friend_4 };
 
@@ -100,31 +95,26 @@
 			}
 		} catch (error) {
 			favouriteOverride = { nsaId, value: !next };
-			favouriteError = error instanceof Error ? error.message : 'Could not update favourite';
+			favouriteError = ReefError.from(error);
 		} finally {
 			favouritePending = false;
 		}
 	}
 
-	async function responseMessage(response: Response, fallback: string) {
-		const body = (await response.json().catch(() => null)) as { message?: string } | null;
-		return body?.message ?? fallback;
-	}
-
 	const friendRouteChannelDisplay: Record<FriendRouteChannel, string> = {
-		FRIEND_CODE: 'By exchanging friend codes.',
-		NX_FACED: 'Searched for local users.',
+		FRIEND_CODE: m.friend_modal_friend_route_friend_code(),
+		NX_FACED: m.friend_modal_friend_route_nx_faced(),
 		// Should show the app channel, this is fallback (FriendRoute.appName)
-		NINTENDO_ACCOUNT: 'Added via a Nintendo Smart Device Game.',
+		NINTENDO_ACCOUNT: m.friend_modal_friend_route_na(),
 		// Show the application details and ingame name
-		IN_APP: 'Added within a Game.',
-		'3DS': 'Added from a Nintendo 3DS System.',
+		IN_APP: m.friend_modal_friend_route_in_app(),
+		'3DS': m.friend_modal_friend_route_nitro(),
 		// Skye to figure this out
-		NNID: 'Added via Nintendo Network.',
-		TWITTER: 'Added via Twitter.',
-		FACEBOOK: 'Added via Facebook.',
-		WECHAT: 'Added via WeChat.',
-		CAMPUS: 'Added via GameChat.'
+		NNID: m.friend_modal_friend_route_platform({ platform: m.common_platform_nnid() }),
+		TWITTER: m.friend_modal_friend_route_platform({ platform: m.common_platform_twitter() }),
+		FACEBOOK: m.friend_modal_friend_route_platform({ platform: m.common_platform_facebook() }),
+		WECHAT: m.friend_modal_friend_route_platform({ platform: m.common_platform_wechat() }),
+		CAMPUS: m.friend_modal_friend_route_platform({ platform: m.common_platform_campus() })
 	};
 
 	const fmt = (s: number) =>
@@ -163,10 +153,6 @@
 							Online
 						{/if}
 					</p>
-
-					<!-- {#if ['PLAYING', 'ONLINE'].includes(displayedFriend.presence.state) && displayedFriend.presence.game }
-						<img src={displayedFriend.presence.game.imageUri } />
-					{/if} -->
 				</div>
 
 				<button
@@ -185,12 +171,12 @@
 						class={isFavourite ? 'text-warning' : ''}
 					/>
 
-					Best Friend
+					{m.friend_modal_best_friend_action()}
 				</button>
 			</div>
 
 			{#if favouriteError}
-				<p class="mt-2 text-sm text-error" aria-live="polite">{favouriteError}</p>
+				<p class="mt-2 text-sm text-error" role="alert">{errorMessage(favouriteError)}</p>
 			{/if}
 		{/if}
 
@@ -200,20 +186,20 @@
 					<span class="loading loading-lg loading-spinner"></span>
 				</div>
 			{:else if loadError}
-				<p class="alert alert-error">{loadError}</p>
+				<p class="alert alert-error" role="alert">{errorMessage(loadError)}</p>
 			{:else if result}
-				<h4 class="mb-3 text-lg font-semibold">Play activity</h4>
+				<h4 class="mb-3 text-lg font-semibold">{m.friend_modal_play_activity()}</h4>
 				{#if result.playLog.length}
-					<div class="grid gap-3 sm:grid-cols-2">
+					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 						{#each result.playLog as game (game.shopUri)}
 							<PlayLogItem {game} />
 						{/each}
 					</div>
 				{:else}
-					<p class="opacity-70">No visible play activity.</p>
+					<p class="opacity-70">{m.friend_modal_play_activity_none()}</p>
 				{/if}
 
-				<h3 class="mt-3 text-lg font-semibold">How You Became Friends:</h3>
+				<h3 class="mt-3 text-lg font-semibold">{m.friend_modal_friend_method_title()}</h3>
 				<p class="font-sm opacity-65">
 					{#if (displayedFriend?.route.channel as string) === 'NINTENDO_ACCOUNT' && displayedFriend?.route.appName}
 						{displayedFriend.route.appName}
@@ -235,12 +221,12 @@
 						</span>
 					{:else}
 						{(displayedFriend && friendRouteChannelDisplay[displayedFriend.route.channel]) ??
-							'Unknown'}
+							m.common_unknown()}
 					{/if}
 				</p>
 
-				<h3 class="mt-3 text-lg font-semibold">When You Became Friends:</h3>
 				{#if displayedFriend?.friendCreatedAt}
+					<h3 class="mt-3 text-lg font-semibold">{m.friend_modal_friend_date_title()}</h3>
 					<p class="font-sm opacity-65">{fmt(displayedFriend.friendCreatedAt)}</p>
 				{/if}
 			{/if}

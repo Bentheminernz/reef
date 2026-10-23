@@ -6,18 +6,12 @@
 	import UserKey from '@lucide/svelte/icons/user-key';
 	import ReefIcon from '$lib/assets/ReefIcon.svg';
 	import { m } from '$lib/paraglide/messages';
-	import { PasskeyError } from '$lib/types/errors';
+	import { errorMessage, ReefError } from '$lib/types/errors';
 
 	let { data, form }: PageProps = $props();
 
 	let passkeyMessage = $state('');
 	let authenticating = $state(false);
-
-	const errorMessages = {
-		nintendo_link: () => m.nintendo_login_error_invalid_link(),
-		invalid_link: () => m.nintendo_login_error_link_mismatch(),
-		generic: () => m.common_error_generic()
-	} as const;
 
 	const nintendoSteps: string[] = $derived([
 		m.login_nintendo_guide_p1(),
@@ -39,7 +33,7 @@
 			const optionsResponse = await fetch('/api/passkeys/authentication/options', {
 				method: 'POST'
 			});
-			if (!optionsResponse.ok) throw new PasskeyError('start_failed');
+			if (!optionsResponse.ok) throw new ReefError('passkey_start_failed');
 
 			const optionsJSON = await optionsResponse.json();
 			const response = await startAuthentication({ optionsJSON });
@@ -49,10 +43,10 @@
 				body: JSON.stringify(response)
 			});
 
-			if (!verificationResponse.ok) throw new PasskeyError('failed');
+			if (!verificationResponse.ok) throw new ReefError('passkey_failed');
 			await goto(resolve('/'));
 		} catch (error) {
-			if (error instanceof PasskeyError && error.code === 'start_failed') {
+			if (error instanceof ReefError && error.code === 'passkey_start_failed') {
 				passkeyMessage = m.login_error_passkey_start_failed();
 			} else if (error instanceof Error && error.name === 'NotAllowedError') {
 				passkeyMessage = m.login_error_passkey_cancelled();
@@ -176,9 +170,7 @@
 			</a>
 
 			{#if form?.message}
-				<p class="text-sm text-error" aria-live="polite">
-					{(errorMessages[form.message as keyof typeof errorMessages] ?? errorMessages.generic)()}
-				</p>
+				<p class="text-sm text-error" aria-live="polite">{errorMessage(form.message)}</p>
 			{/if}
 
 			<form method="POST" action="?/login" class="flex flex-col gap-2">
@@ -193,7 +185,7 @@
 					id="redirect-uri"
 					class="input w-full"
 					name="redirectUri"
-					value={typeof form?.redirectUri === 'string' ? form.redirectUri : ''}
+					value={form?.redirectUri ?? ''}
 					placeholder={m.login_nintendo_redirect_placeholder()}
 					autocomplete="off"
 					autocapitalize="off"

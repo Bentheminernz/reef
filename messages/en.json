@@ -53,8 +53,45 @@
 	"updated_privacy_policy_title": "Updated Privacy Policy",
 	"updated_privacy_policy_subtitle": "Please review and accept the Privacy Policy to contine using Reef.",
 	"updated_privacy_policy_agree": "I have read and agree to the Privacy Policy, version {version}.",
+	"updated_privacy_policy_button_decline": "Decline and sign out",
+	"updated_privacy_policy_button_agree": "Accept and continue",
+	"updated_privacy_policy_document_subtitle": "Version {version} · Effective {date}",
+
+	"home_header_friends": "Friends",
+	"home_header_gws": "Game Services",
+	"home_header_media": "Media",
+
+	"friend_modal_best_friend_action": "Best Friend",
+	"friend_modal_play_activity": "Play Activity",
+	"friend_modal_play_activity_none": "No visible play activity.",
+	"friend_modal_friend_method_title": "How You Became Friends:",
+	"friend_modal_friend_route_friend_code": "By exchanging friend codes.",
+	"friend_modal_friend_route_nx_faced": "Searched for local users.",
+	"friend_modal_friend_route_na": "Added via a Nintendo Smart Device Game.",
+	"friend_modal_friend_route_in_app": "Added within a Game.",
+	"friend_modal_friend_route_nitro": "Added from a Nintendo 3DS System.",
+	"friend_modal_friend_route_platform": "Added via {platform}.",
+	"friend_modal_friend_date_title": "When You Became Friends:",
 
 	"common_continue": "Continue",
 	"common_privacy_policy": "Privacy Policy",
-	"common_error_generic": "Something went wrong. Please try again."
+
+	"common_platform_nnid": "Nintendo Network",
+	"common_platform_twitter": "Twitter",
+	"common_platform_facebook": "Facebook",
+	"common_platform_wechat": "WeChat",
+	"common_platform_campus": "GameChat",
+
+	"common_error_generic": "Something went wrong. Please try again.",
+	"common_error_auth_required": "Your session has expired. Please sign in again.",
+	"common_error_invalid_request": "That request wasn't valid.",
+	"common_error_znca": "Nintendo's servers didn't respond. Please try again.",
+	"common_error_discord_generic": "Discord didn't respond. Please try again.",
+	"common_error_discord_disabled": "Discord enrolment is currently disabled. Please try again later.",
+	"common_error_discord_max_links": "The maximum amoumt of Discord enrolments has been met. Please try again later.",
+	"common_error_sign_up_disabled": "Sign ups are currently closed. Exisiting accounts can still sign in",
+	"common_error_switch_not_linked": "This account isn't linked to a Nintendo Switch console.",
+	"common_error_network": "Couldn't connect. Check your internet and try again.",
+
+	"common_unknown": "Unknown"
 }

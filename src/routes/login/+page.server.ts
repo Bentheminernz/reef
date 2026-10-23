@@ -11,15 +11,11 @@ import {
 } from '$lib/server/utils/NintendoAuth';
 import { createSession } from '$lib/server/session';
 import { dev } from '$app/environment';
-import { fail, redirect } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
 import { count, eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { nintendoAccount, siteSetting, systemBotUser } from '$lib/server/db/schema';
-import {
-	NintendoSwitchNotLinkedError,
-	SignUpDisabledError,
-	SignUpLimitReached
-} from '$lib/types/errors';
+import { failWith, ReefError } from '$lib/types/errors';
 
 function parseRedirectLink(redirectUri: string): URLSearchParams | null {
 	try {
@@ -88,19 +84,16 @@ export const actions: Actions = {
 
 		const params = parseRedirectLink(redirectUri);
 
-		const failWithLink = (message: 'nintendo_link' | 'invalid_link') =>
-			fail(400, { message, redirectUri });
-
 		if (!authoriseUrl || !state || !verifier) {
-			return failWithLink('nintendo_link');
+			return failWith('nintendo_link', { redirectUri });
 		}
 
 		if (!params) {
-			return failWithLink('invalid_link');
+			return failWith('invalid_link', { redirectUri });
 		}
 
 		if (params.get('state') !== state) {
-			return failWithLink('nintendo_link');
+			return failWith('nintendo_link', { redirectUri });
 		}
 
 		let naSession: NintendoAccountSessionToken;
@@ -114,11 +107,11 @@ export const actions: Actions = {
 			naSession = await authenticator.getSessionToken(params);
 		} catch (error) {
 			if (isExpectedLoginError(error)) {
-				return failWithLink('nintendo_link');
+				return failWith('nintendo_link', { redirectUri });
 			}
 
 			console.error('Nintendo sign-in exchange failed', error);
-			return failWithLink('nintendo_link');
+			return failWith('nintendo_link', { redirectUri });
 		}
 
 		try {
@@ -132,22 +125,12 @@ export const actions: Actions = {
 				path: '/'
 			});
 		} catch (error) {
-			if (error instanceof SignUpDisabledError) {
-				return fail(403, {
-					message: 'Sign ups are currently closed. Existing accounts can still sign in.',
-					redirectUri
-				});
-			}
-
-			if (error instanceof NintendoSwitchNotLinkedError) {
-				return fail(403, {
-					message: error.message,
-					redirectUri
-				});
+			if (error instanceof ReefError) {
+				return failWith(error.code, { redirectUri });
 			}
 
 			console.error('Nintendo sign-in failed', error);
-			return failWithLink('nintendo_link');
+			return failWith('nintendo_link', { redirectUri });
 		}
 
 		return redirect(302, '/');
