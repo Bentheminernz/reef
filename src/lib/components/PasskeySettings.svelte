@@ -3,6 +3,8 @@
 	import { invalidate } from '$app/navigation';
 	import type { PasskeySummary } from '$lib/types/settings';
 	import UserKey from '@lucide/svelte/icons/user-key';
+	import { m } from '$lib/paraglide/messages';
+	import { ReefError } from '$lib/types/errors';
 
 	let { passkeys }: { passkeys: PasskeySummary[] } = $props();
 
@@ -11,7 +13,7 @@
 
 	function displayName(passkey: PasskeySummary) {
 		return (
-			passkey.name ?? (passkey.deviceType === 'multiDevice' ? 'Synced passkey' : 'Device passkey')
+			passkey.name ?? (passkey.deviceType === 'multiDevice' ? m.settings_passkey_type_multi_device() : m.settings_passkey_type_device())
 		);
 	}
 
@@ -25,7 +27,7 @@
 
 		try {
 			if (!window.isSecureContext || !browserSupportsWebAuthn()) {
-				message = 'Passkeys require localhost or a secure HTTPS connection.';
+				message = m.login_error_passkey_insecure();
 				return;
 			}
 
@@ -33,7 +35,7 @@
 				method: 'POST'
 			});
 
-			if (!optionsResponse.ok) throw new Error('Could not start passkey registration');
+			if (!optionsResponse.ok) throw new ReefError('passkey_start_failed')
 
 			const optionsJSON = await optionsResponse.json();
 			const response = await startRegistration({ optionsJSON });
@@ -43,52 +45,52 @@
 				body: JSON.stringify(response)
 			});
 
-			if (!verificationResponse.ok) throw new Error('Passkey registration failed');
-			message = 'Passkey registered.';
+			if (!verificationResponse.ok) throw new ReefError('passkey_failed')
+			message = m.settings_passkey_add_success();
 			await invalidate('app:passkeys');
 		} catch (error) {
-			message =
-				error instanceof Error && error.name === 'NotAllowedError'
-					? 'Passkey registration was cancelled.'
-					: error instanceof Error
-						? error.message
-						: 'Passkey registration failed.';
+    		if (error instanceof ReefError && error.code === 'passkey_start_failed') {
+    			message = m.login_error_passkey_start_failed();
+    		} else if (error instanceof Error && error.name === 'NotAllowedError') {
+    			message = m.login_error_passkey_cancelled();
+    		} else {
+    			message = m.login_error_passkey_failed();
+    		}
 		} finally {
 			registering = false;
 		}
 	}
 </script>
 
+
 <section aria-labelledby="passkeys-heading">
 	<header class="mb-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 		<div>
-			<h2 id="passkeys-heading" class="text-lg font-semibold">Passkeys</h2>
+			<h2 id="passkeys-heading" class="text-lg font-semibold">{m.settings_passkey_title()}</h2>
 			<p class="mt-1 max-w-2xl text-sm opacity-65">
-				Use your device's screen lock, fingerprint, or face recognition to sign in without Nintendo
-				authorisation.
+				{m.settings_passkey_subtitle()}
 			</p>
 		</div>
 
 		<button class="btn btn-primary" type="button" onclick={addPasskey} disabled={registering}>
-			{registering ? 'Adding passkey...' : 'Add passkey'}
+			{registering ? m.settings_passkey_button_add_loading() : m.settings_passkey_button_add()}
 		</button>
 	</header>
 
 	<div class="overflow-hidden rounded-2xl border border-base-300 bg-base-200">
 		<div class="border-b border-base-300 px-5 py-3">
 			<div class="flex items-center justify-between">
-				<p class="text-sm font-medium">Registered passkeys</p>
+				<p class="text-sm font-medium">{m.settings_passkey_registered_subheading()}</p>
 				<span class="text-sm opacity-60">
-					{passkeys.length}
-					{passkeys.length === 1 ? 'passkey' : 'passkeys'}
+					{m.settings_passkey_registered_count({ count: passkeys.length })}
 				</span>
 			</div>
 		</div>
 
 		{#if passkeys.length === 0}
 			<div class="p-6">
-				<p class="font-medium">No passkeys registered</p>
-				<p class="mt-1 text-sm opacity-65">Add one to enable passkey sign-in on this account.</p>
+				<p class="font-medium">{m.settings_passkey_empty_title()}</p>
+				<p class="mt-1 text-sm opacity-65">{m.settings_passkey_empty_description()}</p>
 			</div>
 		{:else}
 			<ul class="divide-y divide-base-300">
@@ -103,13 +105,16 @@
 						<div class="min-w-0 flex-1">
 							<p class="truncate font-semibold">{displayName(passkey)}</p>
 							<p class="mt-0.5 text-sm opacity-65">
-								Added {formatDate(passkey.createdAt)}
-								{passkey.backedUp ? ' · Synced' : ' · This device only'}
+								{passkey.backedUp
+									? m.settings_passkey_added_synced({ date: formatDate(passkey.createdAt) })
+									: m.settings_passkey_added_device_only({ date: formatDate(passkey.createdAt) })}
 							</p>
 						</div>
 
 						{#if passkey.transports?.includes('internal')}
-							<span class="badge hidden badge-ghost sm:inline-flex">This device</span>
+							<span class="badge hidden badge-ghost sm:inline-flex">
+								{m.settings_passkey_badge_this_device()}
+							</span>
 						{/if}
 					</li>
 				{/each}

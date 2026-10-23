@@ -5,6 +5,7 @@
 	import DiscordSettings from '$lib/components/DiscordSettings.svelte';
 	import PasskeySettings from '$lib/components/PasskeySettings.svelte';
 	import PrivacySettings from '$lib/components/PrivacySettings.svelte';
+	import { m } from '$lib/paraglide/messages';
 	import type {
 		DataAccessLogSummary,
 		DiscordLinkSummary,
@@ -57,8 +58,8 @@
 
 <div class="w-full py-8 sm:py-10">
 	<header class="border-b border-base-300 pb-8">
-		<h1 class="mt-1 text-3xl font-bold sm:text-4xl">Settings</h1>
-		<p class="mt-3 max-w-2xl opacity-70">Manage sign-in methods and your current session.</p>
+		<h1 class="mt-1 text-3xl font-bold sm:text-4xl">{m.settings_page_title()}</h1>
+		<p class="mt-3 max-w-2xl opacity-70">{m.settings_page_subtitle()}</p>
 	</header>
 
 	<div class="mt-8 space-y-8">

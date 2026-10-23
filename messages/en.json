@@ -61,6 +61,31 @@
 	"home_header_gws": "Game Services",
 	"home_header_media": "Media",
 
+	"settings_page_title": "Settings",
+	"settings_page_subtitle": "Manage sign-in methods, Discord enrolment, privacy and more.",
+
+	"settings_passkey_title": "Passkeys",
+	"settings_passkey_subtitle": "Use your device's screen lock, fingerprint, or face recognition to sign in without Nintendo authorisation.",
+	"settings_passkey_button_add": "Add Passkey",
+	"settings_passkey_button_add_loading": "Adding Passkey...",
+	"settings_passkey_registered_subheading": "Registered Passkeys",
+	"settings_passkey_registered_count": [{
+	    "declarations": ["input count", "local countPlural = count: plural"],
+		"selectors": ["countPlural"],
+		"match": {
+		    "countPlural=one": "{count} Passkey",
+			"countPlural=other": "{count} Passkeys"
+		}
+	}],
+	"settings_passkey_empty_title": "No Passkeys Registered",
+	"settings_passkey_empty_description": "Add one to enable Passkey sign-in on this account.",
+	"settings_passkey_added_synced": "Added {date} · Synced",
+	"settings_passkey_added_device_only": "Added {date} · This device only",
+	"settings_passkey_badge_this_device": "This device",
+	"settings_passkey_type_multi_device": "Syncyed Passkey",
+	"settings_passkey_type_device": "Device Passkey",
+	"settings_passkey_add_success": "Passkey Registered.",
+
 	"friend_modal_best_friend_action": "Best Friend",
 	"friend_modal_play_activity": "Play Activity",
 	"friend_modal_play_activity_none": "No visible play activity.",
