@@ -21,7 +21,6 @@
 		}
 	});
 
-	// Fresh state every time the modal opens.
 	$effect(() => {
 		if (!open) return;
 

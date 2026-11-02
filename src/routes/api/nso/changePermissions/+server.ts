@@ -1,10 +1,11 @@
-import { error, json } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { eq } from 'drizzle-orm';
 import type { CurrentUserPermissions, PlayLogPermissions, PresencePermissions } from 'nxapi/coral';
 import { db } from '$lib/server/db';
 import { nintendoAccount } from '$lib/server/db/schema';
 import { getCoralApi } from '$lib/server/coral';
+import { httpError } from '$lib/types/errors';
 
 interface PermissionRule {
 	values: readonly string[] | null;
@@ -23,7 +24,7 @@ interface PermissionRequest {
 
 export const PUT: RequestHandler = async ({ locals, request }) => {
 	if (!locals.nintendoAccount) {
-		throw error(401, 'Authentication required');
+		throw httpError('authentication_required');
 	}
 
 	const user = locals.nintendoAccount;
@@ -32,7 +33,7 @@ export const PUT: RequestHandler = async ({ locals, request }) => {
 
 	if (rule == null) {
 		console.error('Invalid permission type (%s) for user %s', body.type, user.id);
-		throw error(400, 'Invalid permission type');
+		throw httpError('invalid_request');
 	}
 
 	const valid =
@@ -42,7 +43,7 @@ export const PUT: RequestHandler = async ({ locals, request }) => {
 
 	if (!valid) {
 		console.error('Invalid permission value (%s) for user %s', String(body.value), user.id);
-		throw error(400, 'Invalid permission value');
+		throw httpError('invalid_request');
 	}
 
 	const coral = await getCoralApi(user);
@@ -61,7 +62,7 @@ export const PUT: RequestHandler = async ({ locals, request }) => {
 		}
 	} catch (cause) {
 		console.error('Permission update failed for user %s', user.id, cause);
-		throw error(502, 'Could not update permission');
+		throw httpError('znca_error');
 	}
 
 	let userPermissions: CurrentUserPermissions | null = null;

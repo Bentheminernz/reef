@@ -13,6 +13,10 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import UnlinkDiscordModal from './UnlinkDiscordModal.svelte';
 	import { resolve } from '$app/paths';
+	import { ParaglideMessage } from '@inlang/paraglide-js-svelte';
+	import { m } from '$lib/paraglide/messages';
+	import { getLocale } from '$lib/paraglide/runtime';
+	import { ReefError } from '$lib/types/errors';
 
 	let {
 		discordLink,
@@ -43,6 +47,7 @@
 
 	const presence = $derived(presenceSession?.presence);
 	const presenceState = $derived<string | undefined>(presence?.state);
+	const botName = $derived(visibleSystemBotInfo?.name ?? m.settings_discord_system_user_fallback());
 
 	const syncForm: SubmitFunction =
 		() =>
@@ -50,12 +55,12 @@
 			message = '';
 
 			if (result.type === 'error') {
-				message = result.error ?? 'Something went wrong.';
+				message = result.error ?? m.common_error_generic();
 				return;
 			}
 
 			if (result.type === 'failure') {
-				message = String(result.data?.message ?? 'Something went wrong.');
+				message = String(result.data?.message ?? m.common_error_generic());
 				return;
 			}
 
@@ -63,7 +68,7 @@
 		};
 
 	function formatDate(value: Date) {
-		return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(value);
+		return new Intl.DateTimeFormat(getLocale(), { dateStyle: 'medium' }).format(value);
 	}
 
 	function setHiddenFlag(input: HTMLInputElement | undefined, checked: boolean) {
@@ -87,36 +92,32 @@
 			const response = await fetch('/api/discord/generate-url');
 
 			if (!response.ok) {
-				const body = (await response.json().catch(() => null)) as { message?: string } | null;
-				throw new Error(body?.message ?? 'Could not start Discord linking.');
+				throw new ReefError('discord_error_generic')
 			}
 
 			const { authoriseURL } = await response.json();
 
 			if (typeof authoriseURL !== 'string') {
-				throw new Error('Discord returned an invalid authorisation URL.');
+				throw new ReefError('discord_error_generic')
 			}
 
 			window.location.href = authoriseURL;
 		} catch (error) {
-			message = error instanceof Error ? error.message : 'Discord linking failed.';
+			message = error instanceof Error ? error.message : m.common_error_discord_generic();
 			linking = false;
 		}
 	}
 
-	const platformLabels: Record<ActivityPlatform, string> = {
-		[ActivityPlatform.DESKTOP]: 'Desktop',
-		[ActivityPlatform.XBOX]: 'Xbox',
-		[ActivityPlatform.IOS]: 'iOS',
-		[ActivityPlatform.EMBEDDED]: 'Generic Console',
-		[ActivityPlatform.PS5]: 'PS5',
-		[ActivityPlatform.META_QUEST]: 'Meta Quest'
+	const platformLabels: Record<ActivityPlatform, () => string> = {
+		[ActivityPlatform.DESKTOP]: m.settings_discord_platform_desktop,
+		[ActivityPlatform.XBOX]: m.settings_discord_platform_xbox,
+		[ActivityPlatform.IOS]: m.settings_discord_platform_ios,
+		[ActivityPlatform.EMBEDDED]: m.settings_discord_platform_embedded,
+		[ActivityPlatform.PS5]: m.settings_discord_platform_ps5,
+		[ActivityPlatform.META_QUEST]: m.settings_discord_platform_meta_quest
 	};
 
-	const activityPlatforms = Object.values(ActivityPlatform).map((value) => ({
-		value,
-		label: platformLabels[value]
-	}));
+	const activityPlatforms = Object.values(ActivityPlatform);
 
 	function scrollToPrivacy() {
 		document.getElementById('privacy-controls')?.scrollIntoView({ behavior: 'smooth' });
@@ -125,8 +126,8 @@
 
 <section aria-labelledby="discord-heading">
 	<header class="mb-3">
-		<h2 id="discord-heading" class="text-lg font-semibold">Discord</h2>
-		<p class="mt-1 max-w-2xl text-sm opacity-65">Link a Discord account to share your presence.</p>
+		<h2 id="discord-heading" class="text-lg font-semibold">{m.settings_discord_title()}</h2>
+		<p class="mt-1 max-w-2xl text-sm opacity-65">{m.settings_discord_subtitle()}</p>
 	</header>
 
 	{#if discordLinkError}
@@ -147,7 +148,9 @@
 
 				<div class="min-w-0 flex-1">
 					<p class="truncate font-semibold">{discordLink.discordUsername}</p>
-					<p class="mt-0.5 text-sm opacity-65">Linked {formatDate(discordLink.linkedAt)}</p>
+					<p class="mt-0.5 text-sm opacity-65">
+						{m.settings_discord_user_linked({ date: formatDate(discordLink.linkedAt) })}
+					</p>
 				</div>
 
 				<button
@@ -155,7 +158,7 @@
 					type="button"
 					onclick={() => (unlinkOpen = true)}
 				>
-					Unlink
+					{m.settings_discord_button_unlink()}
 				</button>
 			</div>
 
@@ -163,20 +166,14 @@
 				<div class="border-t border-base-300"></div>
 				<div class="p-5">
 					<div class="alert items-start alert-error" role="alert">
-						<span>
-							Reef has lost access to your Discord account, so Rich Presence has stopped. Unlink
-							your account and link it again to restore it.
-						</span>
+						<span>{m.settings_discord_error_reauth()}</span>
 					</div>
 				</div>
 			{:else if presenceSession?.publishFailures}
 				<div class="border-t border-base-300"></div>
 				<div class="p-5">
 					<div class="alert items-start alert-warning" role="alert">
-						<span>
-							Reef is having trouble publishing your presence to Discord and will keep retrying. If
-							this continues, unlink your account and link it again.
-						</span>
+						<span>{m.settings_discord_error_publish_failed()}</span>
 					</div>
 				</div>
 			{/if}
@@ -193,9 +190,9 @@
 
 				<label class="flex items-center gap-4 p-5">
 					<span class="min-w-0 flex-1">
-						<span class="block font-semibold">Enable Discord Rich Presence</span>
+						<span class="block font-semibold">{m.settings_discord_rpc_heading()}</span>
 						<span class="mt-0.5 block text-sm opacity-65">
-							Keep your Discord status in sync with your Switch presence.
+							{m.settings_discord_rpc_subheading()}
 						</span>
 					</span>
 
@@ -215,16 +212,23 @@
 						<div class="alert items-center alert-warning" role="alert">
 							<TriangleAlert class="size-5 shrink-0" aria-hidden="true" />
 							<span>
-								Your presence is set to <strong>Best Friends only</strong>. Make sure
-								{visibleSystemBotInfo?.name ?? 'the system user'} is marked as a Best Friend, otherwise
-								your games won't show on Discord.
+								<ParaglideMessage
+									message={m.settings_discord_rpc_favorites_warning}
+									inputs={{ botName }}
+								>
+									{#snippet strong({ children })}
+										<strong>{@render children?.()}</strong>
+									{/snippet}
+								</ParaglideMessage>
 							</span>
 
 							<a
 								class="btn btn-sm"
 								role="button"
-								href={resolve(`/friends?pop=${visibleSystemBotInfo?.nsaId}`)}>Add as Best Friend</a
+								href={resolve(`/friends?pop=${visibleSystemBotInfo?.nsaId}`)}
 							>
+								{m.settings_discord_rpc_favorites_warning_button()}
+							</a>
 						</div>
 					</div>
 				{:else if presenceSession?.enabled && userPermissions?.permissions.presence === 'SELF'}
@@ -232,15 +236,16 @@
 						<div class="alert items-center alert-error" role="alert">
 							<CircleX class="size-5 shrink-0" aria-hidden="true" />
 							<span>
-								Your presence is set to <strong>No One</strong>, so
-								{visibleSystemBotInfo?.name ?? 'the system user'} can't see you and Discord Rich Presence
-								won't work. Change it to <strong>Friends</strong> or
-								<strong>Best Friends</strong>.
+								<ParaglideMessage message={m.settings_discord_rpc_self_warning} inputs={{ botName }}>
+									{#snippet strong({ children })}
+										<strong>{@render children?.()}</strong>
+									{/snippet}
+								</ParaglideMessage>
 							</span>
 
-							<button type="button" class="btn btn-sm" onclick={scrollToPrivacy}
-								>Let's change it!</button
-							>
+							<button type="button" class="btn btn-sm" onclick={scrollToPrivacy}>
+								{m.settings_discord_rpc_self_warning_button()}
+							</button>
 						</div>
 					</div>
 				{/if}
@@ -251,9 +256,9 @@
 			<form method="POST" action="?/setSync" use:enhance={syncForm}>
 				<label class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
 					<span class="min-w-0 flex-1">
-						<span class="block font-semibold"> Discord Platform Appearance </span>
+						<span class="block font-semibold">{m.settings_discord_platform_heading()}</span>
 						<span class="mt-0.5 block text-sm opacity-65">
-							Choose what platform your activity appears from.
+							{m.settings_discord_platform_subheading()}
 						</span>
 					</span>
 
@@ -263,8 +268,8 @@
 						value={presenceSession?.platform}
 						onchange={(event) => event.currentTarget.form?.requestSubmit()}
 					>
-						{#each activityPlatforms as option (option.value)}
-							<option value={option.value}>{option.label}</option>
+						{#each activityPlatforms as platform (platform)}
+							<option value={platform}>{platformLabels[platform]()}</option>
 						{/each}
 					</select>
 				</label>
@@ -283,9 +288,9 @@
 
 					<div class="flex items-center gap-4 p-5">
 						<span class="min-w-0 flex-1">
-							<span class="block font-semibold"> Enable SplatNet 3 Enhanced Rich Presence </span>
+							<span class="block font-semibold">{m.settings_discord_splatnet_heading()}</span>
 							<span class="mt-0.5 block text-sm opacity-65">
-								Uses SplatNet 3 to retrieve additonal presence information while playing Splatoon 3.
+								{m.settings_discord_splatnet_subheading()}
 							</span>
 						</span>
 
@@ -314,10 +319,9 @@
 
 				<div class="flex items-center gap-4 p-5">
 					<span class="min-w-0 flex-1">
-						<span class="block font-semibold"> Show activity while inactive </span>
+						<span class="block font-semibold">{m.settings_discord_inactive_heading()}</span>
 						<span class="mt-0.5 block text-sm opacity-65">
-							Keep an "Online" activity on Discord while you're on your Switch but not playing
-							anything.
+							{m.settings_discord_inactive_subheading()}
 						</span>
 					</span>
 
@@ -345,9 +349,9 @@
 
 				<div class="flex items-center gap-4 p-5">
 					<span class="min-w-0 flex-1">
-						<span class="block font-semibold"> Show eShop button </span>
+						<span class="block font-semibold">{m.settings_discord_eshop_heading()}</span>
 						<span class="mt-0.5 block text-sm opacity-65">
-							Add a "View on the eShop" button to your activity.
+							{m.settings_discord_eshop_subheading()}
 						</span>
 					</span>
 
@@ -375,9 +379,9 @@
 
 				<div class="flex items-center gap-4 p-5">
 					<span class="min-w-0 flex-1">
-						<span class="block font-semibold"> Show Friend Code button </span>
+						<span class="block font-semibold">{m.settings_discord_friendcode_heading()}</span>
 						<span class="mt-0.5 block text-sm opacity-65">
-							Add a "Send Friend Request" button linking to your friend code.
+							{m.settings_discord_friendcode_subheading()}
 						</span>
 					</span>
 
@@ -399,8 +403,8 @@
 				<div></div>
 			{:else if presence == null}
 				<div class="p-5">
-					<p class="font-semibold">Waiting for presence</p>
-					<p class="mt-0.5 text-sm opacity-65">Your Switch presence will show up here shortly.</p>
+					<p class="font-semibold">{m.settings_discord_presence_waiting_heading()}</p>
+					<p class="mt-0.5 text-sm opacity-65">{m.settings_discord_presence_waiting_subheading()}</p>
 				</div>
 			{:else if presenceState === 'OFFLINE'}
 				<div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
@@ -411,14 +415,18 @@
 					/>
 
 					<div class="min-w-0 flex-1">
-						<p class="font-semibold">Offline</p>
+						<p class="font-semibold">{m.settings_discord_presence_offline_heading()}</p>
 						{#if presence.game}
-							<p class="mt-0.5 text-sm opacity-65">Last played {presence.game.name}</p>
+							<p class="mt-0.5 text-sm opacity-65">
+								{m.settings_discord_presence_offline_last_played({ game: presence.game.name })}
+							</p>
 						{/if}
-						<p class="mt-0.5 text-sm opacity-65">Last seen {timeAgo(presence.logoutAt)}</p>
+						<p class="mt-0.5 text-sm opacity-65">
+							{m.settings_discord_presence_offline_last_seen({ time: timeAgo(presence.logoutAt) })}
+						</p>
 					</div>
 
-					<span class="badge badge-ghost">Offline</span>
+					<span class="badge badge-ghost">{m.settings_discord_presence_offline_badge()}</span>
 				</div>
 			{:else if presence.game}
 				<div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
@@ -444,11 +452,11 @@
 					/>
 
 					<div class="min-w-0 flex-1">
-						<p class="font-semibold">Online</p>
-						<p class="mt-0.5 text-sm opacity-65">On their Switch right now</p>
+						<p class="font-semibold">{m.settings_discord_presence_online_heading()}</p>
+						<p class="mt-0.5 text-sm opacity-65">{m.settings_discord_presence_online_subheading()}</p>
 					</div>
 
-					<span class="badge badge-soft badge-success">Online</span>
+					<span class="badge badge-soft badge-success">{m.settings_discord_presence_online_badge()}</span>
 				</div>
 			{/if}
 		{:else}
@@ -465,22 +473,23 @@
 
 				<div class="min-w-0 flex-1">
 					<p class="font-semibold">
-						No Discord account linked
+						{m.settings_discord_unlinked_heading()}
 
 						{#if !discordEnrolmentsEnabled}
-							<span class="badge px-1 font-normal badge-error"
-								>Enrolment is currently disabled.</span
-							>
+							<span class="badge px-1 font-normal badge-error">
+								{m.settings_discord_unlinked_badge_enrolment_disabled()}
+							</span>
 						{:else if !systemBotCapacityAvailable}
-							<span class="badge px-1 font-normal badge-warning">No system users available.</span>
+							<span class="badge px-1 font-normal badge-warning">
+								{m.settings_discord_unlinked_badge_no_capacity()}
+							</span>
 						{/if}
 					</p>
 					<p class="mt-0.5 text-sm opacity-65">
 						{#if !discordEnrolmentsEnabled || systemBotCapacityAvailable}
-							Connect a Discord account to enable Discord features.
+							{m.settings_discord_unlinked_subheading()}
 						{:else}
-							All of our system users are full right now, so Discord linking is unavailable. Please
-							try again later.
+							{m.settings_discord_unlinked_subheading_full()}
 						{/if}
 					</p>
 				</div>
@@ -491,7 +500,7 @@
 					onclick={linkAccount}
 					disabled={linking || !discordEnrolmentsEnabled || !systemBotCapacityAvailable}
 				>
-					{linking ? 'Redirecting...' : 'Link Discord account'}
+					{linking ? m.settings_discord_button_link_loading() : m.settings_discord_button_link()}
 				</button>
 			</div>
 		{/if}

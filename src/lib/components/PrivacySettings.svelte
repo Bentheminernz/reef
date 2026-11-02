@@ -3,6 +3,8 @@
 	import CircleAlert from '@lucide/svelte/icons/circle-alert';
 	import type { PlayLogPermissions, PresencePermissions } from 'nxapi/coral';
 	import type { UserPermissionsSummary } from '$lib/types/settings';
+	import { errorMessage, ReefError } from '$lib/types/errors';
+	import { m } from '$lib/paraglide/messages';
 
 	let {
 		userPermissions
@@ -16,10 +18,8 @@
 
 	let saving = $state(false);
 	let message = $state('');
-	let error = $state('');
+	let error = $state<ReefError>();
 
-	// Trust a fresh copy whenever the layout data changes (e.g. after a retry
-	// or when the panel is reopened after the server already had newer data).
 	$effect(() => {
 		if (userPermissions == null) return;
 		presence = userPermissions.permissions.presence;
@@ -28,16 +28,16 @@
 	});
 
 	const presenceOptions = [
-		{ value: 'FRIENDS', label: 'Friends' },
-		{ value: 'FAVORITE_FRIENDS', label: 'Best Friends' },
-		{ value: 'SELF', label: 'No One' }
+		{ value: 'FRIENDS', label: m.settings_privacy_value_friends() },
+		{ value: 'FAVORITE_FRIENDS', label: m.settings_privacy_value_favorite() },
+		{ value: 'SELF', label: m.settings_privacy_value_self() }
 	];
 
 	const playLogOptions = [
-		{ value: 'EVERYONE', label: 'Everyone' },
-		{ value: 'FRIENDS', label: 'Friends' },
-		{ value: 'FAVORITE_FRIENDS', label: 'Best Friends' },
-		{ value: 'SELF', label: 'No One' }
+		{ value: 'EVERYONE', label: m.settings_privacy_value_everyone() },
+		{ value: 'FRIENDS', label: m.settings_privacy_value_friends() },
+		{ value: 'FAVORITE_FRIENDS', label: m.settings_privacy_value_favorite() },
+		{ value: 'SELF', label: m.settings_privacy_value_self() }
 	];
 
 	async function save(
@@ -49,7 +49,7 @@
 
 		saving = true;
 		message = '';
-		error = '';
+		error = undefined;
 
 		try {
 			const response = await fetch('/api/nso/changePermissions', {
@@ -59,7 +59,7 @@
 			});
 
 			if (!response.ok) {
-				throw new Error(await errorMessage(response, 'Could not update that setting.'));
+				throw await ReefError.fromResponse(response);
 			}
 
 			const data = (await response.json().catch(() => ({}))) as {
@@ -72,30 +72,23 @@
 				friendRequests = data.userPermissions.permissions.friendRequestReception;
 			}
 
-			message = 'Saved.';
+			message = m.settings_privacy_saved();
 
-			// Refresh the layout data so sibling sections that read the stored
-			// permissions (e.g. the Discord presence warnings) update immediately.
 			void invalidateAll();
 		} catch (cause) {
 			rollback();
-			error = cause instanceof Error ? cause.message : 'Could not update that setting.';
+			error = ReefError.from(cause);
 		} finally {
 			saving = false;
 		}
-	}
-
-	async function errorMessage(response: Response, fallback: string) {
-		const body = (await response.json().catch(() => null)) as { message?: string } | null;
-		return body?.message ?? fallback;
 	}
 </script>
 
 <section aria-labelledby="privacy-heading" id="privacy-controls">
 	<header class="mb-3">
-		<h2 id="privacy-heading" class="text-lg font-semibold">Privacy</h2>
+		<h2 id="privacy-heading" class="text-lg font-semibold">{m.settings_privacy_title()}</h2>
 		<p class="mt-1 max-w-2xl text-sm opacity-65">
-			Control who can see your Switch activity and who can send you friend requests.
+			{m.settings_privacy_subtitle()}
 		</p>
 	</header>
 
@@ -104,8 +97,7 @@
 			<div class="alert items-start alert-info" role="alert">
 				<CircleAlert class="size-5 shrink-0" aria-hidden="true" />
 				<span>
-					Your privacy settings haven't been synced from Nintendo yet. They'll show up here after
-					your next login.
+					{m.settings_privacy_no_sync()}
 				</span>
 			</div>
 
@@ -114,17 +106,16 @@
 				type="button"
 				onclick={() => invalidateAll()}
 			>
-				Try again
+				{m.common_try_again()}
 			</button>
 		</div>
 	{:else}
 		<div class="overflow-hidden rounded-2xl border border-base-300 bg-base-200">
 			<div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
 				<span class="min-w-0 flex-1">
-					<span class="block font-semibold">Presence visibility</span>
+					<span class="block font-semibold">{m.settings_privacy_presence_heading()}</span>
 					<span class="mt-0.5 block text-sm opacity-65">
-						Who can see your presence. The system user needs to see you for Discord Rich Presence to
-						work.
+						{m.settings_privacy_presence_subheading()}
 					</span>
 				</span>
 
@@ -152,9 +143,9 @@
 
 			<div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
 				<span class="min-w-0 flex-1">
-					<span class="block font-semibold">Play log visibility</span>
+					<span class="block font-semibold">{m.settings_privacy_play_heading()}</span>
 					<span class="mt-0.5 block text-sm opacity-65">
-						Who can see which games you've been playing on your profile.
+						{m.settings_privacy_play_subheading()}
 					</span>
 				</span>
 
@@ -182,10 +173,9 @@
 
 			<div class="flex items-center gap-4 p-5">
 				<span class="min-w-0 flex-1">
-					<span class="block font-semibold">Allow friend requests</span>
+					<span class="block font-semibold">{m.settings_privacy_requests_heading()}</span>
 					<span class="mt-0.5 block text-sm opacity-65">
-						Whether other players can send you friend requests. Turning this off can stop the system
-						user from adding you, which breaks Discord presence setup.
+						{m.settings_privacy_requests_subheading()}
 					</span>
 				</span>
 
@@ -212,7 +202,7 @@
 		{/if}
 
 		{#if error}
-			<p class="mt-5 text-sm text-error" aria-live="polite">{error}</p>
+			<p class="mt-5 text-sm text-error" aria-live="polite">{errorMessage(error)}</p>
 		{/if}
 	{/if}
 </section>
