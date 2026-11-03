@@ -46,22 +46,32 @@ export const actions: Actions = {
 		const user = locals.nintendoAccount;
 		const formData = await request.formData();
 
-		const enabledField = formData.get('enabled');
+		const presenceModeField = formData.get('presenceMode');
 		const platformField = formData.get('platform');
 		const splatnetEnabledField = formData.get('splatnetEnabled');
-		const showWhenInactiveField = formData.get('showWhenInactive');
-		const showEShopButtonField = formData.get('showEShopButton');
-		const showFriendCodeButtonField = formData.get('showFriendCodeButton');
+		const eShopButtonField = formData.get('eShopButton');
+		const friendButtonField = formData.get('friendButton');
+		const showPlaytimeField = formData.get('showPlaytime');
 
-		const enabled = enabledField == null ? undefined : enabledField === 'true';
+		const presenceModes = ['disabled', 'in_game', 'always'] as const;
+		const eShopButtonModes = ['disabled', 'game_icon', 'btn', 'both'] as const;
+		const friendButtonModes = ['disabled', 'user_icon', 'btn', 'both'] as const;
+
+		const presenceMode =
+			presenceModeField == null
+				? undefined
+				: presenceModes.find((mode) => mode === presenceModeField);
+		const eShopButton =
+			eShopButtonField == null
+				? undefined
+				: eShopButtonModes.find((mode) => mode === eShopButtonField);
+		const friendButton =
+			friendButtonField == null
+				? undefined
+				: friendButtonModes.find((mode) => mode === friendButtonField);
 		const splatnetEnabled =
 			splatnetEnabledField == null ? undefined : splatnetEnabledField === 'true';
-		const showWhenInactive =
-			showWhenInactiveField == null ? undefined : showWhenInactiveField === 'true';
-		const showEShopButton =
-			showEShopButtonField == null ? undefined : showEShopButtonField === 'true';
-		const showFriendCodeButton =
-			showFriendCodeButtonField == null ? undefined : showFriendCodeButtonField === 'true';
+		const showPlaytime = showPlaytimeField == null ? undefined : showPlaytimeField === 'true';
 		const platform =
 			platformField == null
 				? undefined
@@ -69,12 +79,12 @@ export const actions: Actions = {
 					ActivityPlatform.DESKTOP);
 
 		if (
-			enabled === undefined &&
+			presenceMode === undefined &&
 			platform === undefined &&
 			splatnetEnabled === undefined &&
-			showWhenInactive === undefined &&
-			showEShopButton === undefined &&
-			showFriendCodeButton === undefined
+			eShopButton === undefined &&
+			friendButton === undefined &&
+			showPlaytime === undefined
 		) {
 			return error(400, 'Nothing to update.');
 		}
@@ -90,23 +100,23 @@ export const actions: Actions = {
 		}
 
 		const set: Partial<typeof presenceSessions.$inferInsert> = {};
-		if (enabled !== undefined) set.enabled = enabled;
+		if (presenceMode !== undefined) set.presenceMode = presenceMode;
 		if (platform !== undefined) set.platform = platform;
 		if (splatnetEnabled !== undefined) set.splatnetEnabled = splatnetEnabled;
-		if (showWhenInactive !== undefined) set.showWhenInactive = showWhenInactive;
-		if (showEShopButton !== undefined) set.showEShopButton = showEShopButton;
-		if (showFriendCodeButton !== undefined) set.showFriendCodeButton = showFriendCodeButton;
+		if (eShopButton !== undefined) set.eShopButton = eShopButton;
+		if (friendButton !== undefined) set.friendButton = friendButton;
+		if (showPlaytime !== undefined) set.showPlaytime = showPlaytime;
 
 		const [presenceSession] = await db
 			.insert(presenceSessions)
 			.values({
 				discordLinkId: discordLink.id,
-				enabled: enabled ?? false,
+				presenceMode: presenceMode ?? 'in_game',
 				platform: platform ?? ActivityPlatform.DESKTOP,
 				splatnetEnabled: splatnetEnabled ?? true,
-				showWhenInactive: showWhenInactive ?? false,
-				showEShopButton: showEShopButton ?? true,
-				showFriendCodeButton: showFriendCodeButton ?? false
+				eShopButton: eShopButton ?? 'both',
+				friendButton: friendButton ?? 'both',
+				showPlaytime: showPlaytime ?? true
 			})
 			.onConflictDoUpdate({
 				target: presenceSessions.discordLinkId,
@@ -114,7 +124,7 @@ export const actions: Actions = {
 			})
 			.returning();
 
-		if (enabled === false) {
+		if (presenceSession?.presenceMode === 'disabled') {
 			await endDiscordHeadlessSession(discordLink.id);
 			return;
 		}
@@ -125,7 +135,7 @@ export const actions: Actions = {
 			});
 		}
 
-		if (enabled === undefined && presenceSession?.discordToken == null) return;
+		if (presenceMode === undefined && presenceSession?.discordToken == null) return;
 
 		const systemBotUserId = user.systemBotUserId;
 
@@ -171,9 +181,10 @@ export const actions: Actions = {
 			platform,
 			friendCode?.friendCodeURL,
 			{
-				showWhenInactive: presenceSession.showWhenInactive,
-				showEShopButton: presenceSession.showEShopButton,
-				showFriendCodeButton: presenceSession.showFriendCodeButton
+				showWhenInactive: presenceSession.presenceMode === 'always',
+				eShopButton: presenceSession.eShopButton,
+				friendCodeButton: presenceSession.friendButton,
+				showPlaytime: presenceSession.showPlaytime
 			}
 		);
 

@@ -13,18 +13,25 @@
 	let presence = $state<PresencePermissions | undefined>(undefined);
 	let playLog = $state<PlayLogPermissions | undefined>(undefined);
 	let friendRequests = $state<boolean | undefined>(undefined);
+	let allowDiscordUsernameSearching = $state<boolean | undefined>(undefined);
 
 	let saving = $state(false);
 	let message = $state('');
 	let error = $state('');
 
-	// Trust a fresh copy whenever the layout data changes (e.g. after a retry
-	// or when the panel is reopened after the server already had newer data).
+	type PermissionsResponse = {
+		userPermissions?: {
+			coral?: UserPermissionsSummary['coral'] | null;
+			reef: UserPermissionsSummary['reef'];
+		} | null;
+	};
+
 	$effect(() => {
 		if (userPermissions == null) return;
-		presence = userPermissions.permissions.presence;
-		playLog = userPermissions.permissions.playLog;
-		friendRequests = userPermissions.permissions.friendRequestReception;
+		presence = userPermissions.coral.permissions.presence;
+		playLog = userPermissions.coral.permissions.playLog;
+		friendRequests = userPermissions.coral.permissions.friendRequestReception;
+		allowDiscordUsernameSearching = userPermissions.reef.allowDiscordUsernameSearching;
 	});
 
 	const presenceOptions = [
@@ -41,7 +48,7 @@
 	];
 
 	async function save(
-		type: 'presence' | 'play-log' | 'friend-request',
+		type: 'presence' | 'play-log' | 'friend-request' | 'discord-username-search',
 		value: unknown,
 		rollback: () => void
 	) {
@@ -52,7 +59,12 @@
 		error = '';
 
 		try {
-			const response = await fetch('/api/nso/changePermissions', {
+			const endpoint =
+				type === 'discord-username-search'
+					? '/api/privacy/changePermissions'
+					: '/api/nso/changePermissions';
+
+			const response = await fetch(endpoint, {
 				method: 'PUT',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ type, value })
@@ -62,20 +74,22 @@
 				throw new Error(await errorMessage(response, 'Could not update that setting.'));
 			}
 
-			const data = (await response.json().catch(() => ({}))) as {
-				userPermissions?: UserPermissionsSummary;
-			};
+			const data = (await response.json().catch(() => ({}))) as PermissionsResponse;
 
 			if (data.userPermissions) {
-				presence = data.userPermissions.permissions.presence;
-				playLog = data.userPermissions.permissions.playLog;
-				friendRequests = data.userPermissions.permissions.friendRequestReception;
+				const coral = data.userPermissions.coral;
+
+				if (coral) {
+					presence = coral.permissions.presence;
+					playLog = coral.permissions.playLog;
+					friendRequests = coral.permissions.friendRequestReception;
+				}
+
+				allowDiscordUsernameSearching = data.userPermissions.reef.allowDiscordUsernameSearching;
 			}
 
 			message = 'Saved.';
 
-			// Refresh the layout data so sibling sections that read the stored
-			// permissions (e.g. the Discord presence warnings) update immediately.
 			void invalidateAll();
 		} catch (cause) {
 			rollback();
@@ -95,7 +109,8 @@
 	<header class="mb-3">
 		<h2 id="privacy-heading" class="text-lg font-semibold">Privacy</h2>
 		<p class="mt-1 max-w-2xl text-sm opacity-65">
-			Control who can see your Switch activity and who can send you friend requests.
+			Control who can see your Switch activity, who can send you friend requests, and whether other
+			Reef users can find you by your Discord username.
 		</p>
 	</header>
 
@@ -201,6 +216,33 @@
 						friendRequests = next;
 						void save('friend-request', next, () => {
 							friendRequests = previous;
+						});
+					}}
+				/>
+			</div>
+
+			<div class="border-t border-base-300"></div>
+
+			<div class="flex items-center gap-4 p-5">
+				<span class="min-w-0 flex-1">
+					<span class="block font-semibold">Allow Discord username search</span>
+					<span class="mt-0.5 block text-sm opacity-65">
+						Let other Reef users find you by your Discord username when they're adding friends.
+					</span>
+				</span>
+
+				<input
+					type="checkbox"
+					class="toggle toggle-primary"
+					checked={allowDiscordUsernameSearching ?? true}
+					disabled={saving}
+					onchange={(event) => {
+						const next = event.currentTarget.checked;
+						const previous = allowDiscordUsernameSearching;
+
+						allowDiscordUsernameSearching = next;
+						void save('discord-username-search', next, () => {
+							allowDiscordUsernameSearching = previous;
 						});
 					}}
 				/>

@@ -55,7 +55,8 @@ export const nintendoAccount = sqliteTable(
 		currentUserPermissions: text('current_user_permissions', {
 			mode: 'json'
 		}).$type<CurrentUserPermissions>(),
-		permissionsSyncedAt: integer('permissions_synced_at', { mode: 'timestamp' }),
+        permissionsSyncedAt: integer('permissions_synced_at', { mode: 'timestamp' }),
+		allowDiscordUsernameSearching: integer('allow_discord_username_syncing', { mode: 'boolean' }).notNull().default(true),
 		createdAt: integer('created_at', { mode: 'timestamp' })
 			.notNull()
 			.$defaultFn(() => new Date())
@@ -186,16 +187,20 @@ export const presenceSessions = sqliteTable('presence_sessions', {
 		.notNull()
 		.unique()
 		.references(() => discordLinks.id, { onDelete: 'cascade' }),
-	enabled: integer('enabled', { mode: 'boolean' }).notNull().default(false),
+	presenceMode: text('presence_mode', { enum: ['disabled', 'in_game', 'always'] })
+		.notNull()
+		.default('in_game'),
 	presence: text('presence', { mode: 'json' }).$type<PresenceSnapshot>(),
 	activity: text('activity', { mode: 'json' }).$type<DiscordActivity>(),
 	platform: text('platform').$type<ActivityPlatform>().notNull().default(ActivityPlatform.DESKTOP),
 	splatnetEnabled: integer('splatnet_enabled', { mode: 'boolean' }).notNull().default(true),
-	showWhenInactive: integer('show_when_inactive', { mode: 'boolean' }).notNull().default(false),
-	showEShopButton: integer('show_eshop_button', { mode: 'boolean' }).notNull().default(true),
-	showFriendCodeButton: integer('show_friend_code_button', { mode: 'boolean' })
+	eShopButton: text('eshop_button', { enum: ['disabled', 'game_icon', 'btn', 'both'] })
 		.notNull()
-		.default(true),
+		.default('both'),
+	friendButton: text('friend_button', { enum: ['disabled', 'user_icon', 'btn', 'both'] })
+		.notNull()
+		.default('both'),
+	showPlaytime: integer('show_playtime', { mode: 'boolean' }).notNull().default(true),
 	discordToken: text('discord_token'),
 	publishedAt: integer('published_at', { mode: 'timestamp' }),
 	startedAt: integer('started_at', { mode: 'timestamp' })
