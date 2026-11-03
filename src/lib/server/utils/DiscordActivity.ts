@@ -50,8 +50,9 @@ export function mergePresenceSnapshot(
 
 export interface DiscordActivityOptions {
 	showWhenInactive: boolean;
-	showEShopButton: boolean;
-	showFriendCodeButton: boolean;
+	eShopButton: 'disabled' | 'game_icon' | 'btn' | 'both';
+	friendCodeButton: 'disabled' | 'user_icon' | 'btn' | 'both';
+	showPlaytime: boolean;
 }
 
 export function buildDiscordActivity(
@@ -63,8 +64,9 @@ export function buildDiscordActivity(
 ): DiscordActivity | null {
 	const {
 		showWhenInactive = false,
-		showEShopButton = true,
-		showFriendCodeButton = false
+		eShopButton = 'game_icon',
+		friendCodeButton = 'both',
+		showPlaytime = true
 	} = options ?? {};
 
 	const presence = friend.presence;
@@ -74,7 +76,7 @@ export function buildDiscordActivity(
 
 		const titleId = getTitleIdFromEcUrl(game.shopUri);
 		const gameUri = `https://fancy.org.uk/api/nxapi/title/${titleId}/redirect?source=Reef`;
-		const playTime = formatPlayTime(game.totalPlayTime, game.firstPlayedAt);
+		const playTime = showPlaytime ? formatPlayTime(game.totalPlayTime, game.firstPlayedAt) : null;
 		const sysDescription = game.sysDescription.trim() === '' ? null : game.sysDescription;
 
 		const classicGameName =
@@ -90,10 +92,10 @@ export function buildDiscordActivity(
 			application_id: applicationId,
 			platform: platform,
 			type: 0,
-			details: classicGameName != null ? game.name : (sysDescription ?? playTime),
+			details: classicGameName != null ? game.name : (sysDescription ?? playTime ?? undefined),
 			details_url: gameUri,
 			state:
-				sysDescription != null
+				sysDescription != null && playTime != null
 					? playTime
 					: presence.platform == PresencePlatform.NX
 						? 'Nintendo Switch'
@@ -109,11 +111,24 @@ export function buildDiscordActivity(
 
 		const buttons: NonNullable<DiscordActivity['buttons']> = [];
 
-		if (showFriendCodeButton && friendCodeURI) {
+		if (['btn', 'both'].includes(eShopButton)) {
+			buttons.push({ label: 'View on the eShop', url: gameUri });
+		}
+
+		if (['game_icon', 'both'].includes(eShopButton) && activity.assets?.large_image != null) {
+			activity.assets.large_url = gameUri;
+		}
+
+		if (['btn', 'both'].includes(friendCodeButton) && friendCodeURI) {
 			buttons.push({ label: 'Send Friend Request', url: friendCodeURI });
 		}
-		if (showEShopButton) {
-			buttons.push({ label: 'View on the eShop', url: gameUri });
+
+		if (
+			['user_icon', 'both'].includes(friendCodeButton) &&
+			friendCodeURI != null &&
+			activity.assets?.small_image != null
+		) {
+			activity.assets.small_url = friendCodeURI;
 		}
 
 		if (buttons.length > 0) {
@@ -140,13 +155,21 @@ export function buildDiscordActivity(
 			}
 		};
 
-		if (showFriendCodeButton && friendCodeURI) {
+		if (['btn', 'both'].includes(friendCodeButton) && friendCodeURI) {
 			activity.buttons = [
 				{
 					label: 'Send Friend Request',
 					url: friendCodeURI
 				}
 			];
+		}
+
+		if (
+			['user_icon', 'both'].includes(friendCodeButton) &&
+			friendCodeURI != null &&
+			activity.assets?.small_image != null
+		) {
+			activity.assets.small_url = friendCodeURI;
 		}
 
 		return activity;

@@ -81,5 +81,16 @@ export const PUT: RequestHandler = async ({ locals, request }) => {
 		console.error('Failed to persist permissions for user %s', user.id, cause);
 	}
 
-	return json({ success: true, userPermissions });
+	return json({
+		success: true,
+		userPermissions:
+			userPermissions == null
+				? null
+				: {
+						coral: userPermissions,
+						reef: {
+							allowDiscordUsernameSearching: user.allowDiscordUsernameSearching
+						}
+					}
+	});
 };

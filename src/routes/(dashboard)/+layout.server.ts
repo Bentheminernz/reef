@@ -101,7 +101,7 @@ export const load = (async ({ locals, depends, isDataRequest, url }) => {
 		? await db
 				.select({
 					id: presenceSessions.id,
-					enabled: presenceSessions.enabled,
+					presenceMode: presenceSessions.presenceMode,
 					presence: presenceSessions.presence,
 					activity: presenceSessions.activity,
 					publishedAt: presenceSessions.publishedAt,
@@ -109,9 +109,9 @@ export const load = (async ({ locals, depends, isDataRequest, url }) => {
 					lastSyncedAt: presenceSessions.lastSyncedAt,
 					platform: presenceSessions.platform,
 					splatnetEnabled: presenceSessions.splatnetEnabled,
-					showWhenInactive: presenceSessions.showWhenInactive,
-					showEShopButton: presenceSessions.showEShopButton,
-					showFriendCodeButton: presenceSessions.showFriendCodeButton,
+					eShopButton: presenceSessions.eShopButton,
+					friendButton: presenceSessions.friendButton,
+					showPlaytime: presenceSessions.showPlaytime,
 					publishFailures: presenceSessions.publishFailures,
 					lastPublishError: presenceSessions.lastPublishError,
 					needsReauth: presenceSessions.needsReauth
@@ -226,6 +226,8 @@ export const load = (async ({ locals, depends, isDataRequest, url }) => {
 		? (DISCORD_LINK_ERROR_MESSAGES[discordErrorCode] ?? DISCORD_LINK_ERROR_MESSAGES.unassigned)
 		: null;
 
+	const currentUserPermissions = locals.nintendoAccount.currentUserPermissions;
+
 	return {
 		...deferredData,
 		signupBlocked:
@@ -241,7 +243,15 @@ export const load = (async ({ locals, depends, isDataRequest, url }) => {
 		allowAssets: locals.nintendoAccount.accessNintendoAssets,
 		isAdmin: admin,
 		adminSettings,
-		userPermissions: locals.nintendoAccount.currentUserPermissions,
+		userPermissions:
+			currentUserPermissions == null
+				? null
+				: {
+						coral: currentUserPermissions,
+						reef: {
+							allowDiscordUsernameSearching: locals.nintendoAccount.allowDiscordUsernameSearching
+						}
+					},
 		discordEnrolmentEnabled,
 		systemBotCapacityAvailable,
 		discordLinkError

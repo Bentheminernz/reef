@@ -20,17 +20,17 @@ interface DiscordLinkSummary {
 
 interface PresenceSessionSummary {
 	id: string;
-	enabled: boolean;
 	presence: PresenceSnapshot | null;
+	presenceMode: 'disabled' | 'in_game' | 'always';
 	activity: DiscordActivity | null;
 	publishedAt: Date | null;
 	startedAt: Date;
 	lastSyncedAt: Date | null;
 	platform: ActivityPlatform;
 	splatnetEnabled: boolean;
-	showWhenInactive: boolean;
-	showEShopButton: boolean;
-	showFriendCodeButton: boolean;
+	eShopButton: 'disabled' | 'game_icon' | 'btn' | 'both';
+	friendButton: 'disabled' | 'user_icon' | 'btn' | 'both';
+	showPlaytime: boolean;
 	publishFailures: number;
 	lastPublishError: string | null;
 	needsReauth: boolean;
@@ -60,7 +60,12 @@ interface VisibleSystemBotInfo {
 	};
 }
 
-export type UserPermissionsSummary = CurrentUserPermissions;
+export interface UserPermissionsSummary {
+	coral: CurrentUserPermissions;
+	reef: {
+		allowDiscordUsernameSearching: boolean;
+	};
+}
 
 export type {
 	PasskeySummary,

@@ -1,0 +1,1 @@
+ALTER TABLE `nintendo_accounts` ADD `allow_discord_username_syncing` integer DEFAULT true NOT NULL;

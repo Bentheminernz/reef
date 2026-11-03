@@ -176,6 +176,20 @@
       "when": 1792048207821,
       "tag": "0024_petite_ulik",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1793650467641,
+      "tag": "0025_living_argent",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1793693813191,
+      "tag": "0026_mysterious_elektra",
+      "breakpoints": true
     }
   ]
 }

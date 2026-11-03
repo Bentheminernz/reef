@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/sveltekit';
 
 Sentry.init({
 	dsn: 'https://aa547479d44077740c03231d6ddd0860@o4512231178240000.ingest.us.sentry.io/4512231180730368',
+	enabled: process.env.NODE_ENV !== 'development',
 	release: __GIT_SHA__,
 
 	// Errors only for now; raise to something like 0.1 when you want performance tracing

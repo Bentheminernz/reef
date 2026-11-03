@@ -35,14 +35,14 @@
 	let unlinkOpen = $state(false);
 	let linking = $state(false);
 	let message = $state('');
-	let enabledHidden = $state<HTMLInputElement>();
 	let splatnetEnabledHidden = $state<HTMLInputElement>();
-	let showWhenInactiveHidden = $state<HTMLInputElement>();
-	let showEShopButtonHidden = $state<HTMLInputElement>();
-	let showFriendCodeButtonHidden = $state<HTMLInputElement>();
+	let showPlaytimeHidden = $state<HTMLInputElement>();
 
 	const presence = $derived(presenceSession?.presence);
 	const presenceState = $derived<string | undefined>(presence?.state);
+	const presenceEnabled = $derived(
+		presenceSession?.presenceMode === 'in_game' || presenceSession?.presenceMode === 'always'
+	);
 
 	const syncForm: SubmitFunction =
 		() =>
@@ -118,6 +118,26 @@
 		label: platformLabels[value]
 	}));
 
+	const presenceModeOptions = [
+		{ value: 'disabled', label: 'Disabled' },
+		{ value: 'in_game', label: 'While in-game' },
+		{ value: 'always', label: 'All activity' }
+	] as const;
+
+	const eShopButtonOptions = [
+		{ value: 'disabled', label: 'Disabled' },
+		{ value: 'game_icon', label: 'Game icon' },
+		{ value: 'btn', label: 'Button' },
+		{ value: 'both', label: 'Both' }
+	] as const;
+
+	const friendButtonOptions = [
+		{ value: 'disabled', label: 'Disabled' },
+		{ value: 'user_icon', label: 'User icon' },
+		{ value: 'btn', label: 'Button' },
+		{ value: 'both', label: 'Both' }
+	] as const;
+
 	function scrollToPrivacy() {
 		document.getElementById('privacy-controls')?.scrollIntoView({ behavior: 'smooth' });
 	}
@@ -184,33 +204,28 @@
 			<div class="border-t border-base-300"></div>
 
 			<form method="POST" action="?/setSync" use:enhance={syncForm}>
-				<input
-					type="hidden"
-					name="enabled"
-					value={presenceSession?.enabled ? 'true' : 'false'}
-					bind:this={enabledHidden}
-				/>
-
-				<label class="flex items-center gap-4 p-5">
+				<label class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
 					<span class="min-w-0 flex-1">
-						<span class="block font-semibold">Enable Discord Rich Presence</span>
+						<span class="block font-semibold">Discord Rich Presence</span>
 						<span class="mt-0.5 block text-sm opacity-65">
-							Keep your Discord status in sync with your Switch presence.
+							Set your Discord activity to the game you're currently playing on your console. "All
+							activity" allows you to show when your console is online but not actively in a game.
 						</span>
 					</span>
 
-					<input
-						type="checkbox"
-						class="toggle toggle-primary"
-						checked={presenceSession?.enabled ?? false}
-						onchange={(event) => {
-							setHiddenFlag(enabledHidden, event.currentTarget.checked);
-							event.currentTarget.form?.requestSubmit();
-						}}
-					/>
+					<select
+						class="select w-full sm:w-48"
+						name="presenceMode"
+						value={presenceSession?.presenceMode ?? 'in_game'}
+						onchange={(event) => event.currentTarget.form?.requestSubmit()}
+					>
+						{#each presenceModeOptions as option (option.value)}
+							<option value={option.value}>{option.label}</option>
+						{/each}
+					</select>
 				</label>
 
-				{#if presenceSession?.enabled && userPermissions?.permissions.presence === 'FAVORITE_FRIENDS'}
+				{#if presenceEnabled && userPermissions?.coral.permissions.presence === 'FAVORITE_FRIENDS'}
 					<div class="px-5 pb-5">
 						<div class="alert items-center alert-warning" role="alert">
 							<TriangleAlert class="size-5 shrink-0" aria-hidden="true" />
@@ -227,7 +242,7 @@
 							>
 						</div>
 					</div>
-				{:else if presenceSession?.enabled && userPermissions?.permissions.presence === 'SELF'}
+				{:else if presenceEnabled && userPermissions?.coral.permissions.presence === 'SELF'}
 					<div class="px-5 pb-5">
 						<div class="alert items-center alert-error" role="alert">
 							<CircleX class="size-5 shrink-0" aria-hidden="true" />
@@ -251,9 +266,9 @@
 			<form method="POST" action="?/setSync" use:enhance={syncForm}>
 				<label class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
 					<span class="min-w-0 flex-1">
-						<span class="block font-semibold"> Discord Platform Appearance </span>
+						<span class="block font-semibold">RPC Platform Appearance</span>
 						<span class="mt-0.5 block text-sm opacity-65">
-							Choose what platform your activity appears from.
+							Choose what platform your activity appears as.
 						</span>
 					</span>
 
@@ -283,9 +298,9 @@
 
 					<div class="flex items-center gap-4 p-5">
 						<span class="min-w-0 flex-1">
-							<span class="block font-semibold"> Enable SplatNet 3 Enhanced Rich Presence </span>
+							<span class="block font-semibold">SplatNet 3 Enhanced Rich Presence</span>
 							<span class="mt-0.5 block text-sm opacity-65">
-								Uses SplatNet 3 to retrieve additonal presence information while playing Splatoon 3.
+								Use SplatNet 3 to retrieve match status while playing Splatoon 3.
 							</span>
 						</span>
 
@@ -307,26 +322,26 @@
 			<form method="POST" action="?/setSync" use:enhance={syncForm}>
 				<input
 					type="hidden"
-					name="showWhenInactive"
-					value={presenceSession?.showWhenInactive ? 'true' : 'false'}
-					bind:this={showWhenInactiveHidden}
+					name="showPlaytime"
+					value={presenceSession?.showPlaytime ? 'true' : 'false'}
+					bind:this={showPlaytimeHidden}
 				/>
 
 				<div class="flex items-center gap-4 p-5">
 					<span class="min-w-0 flex-1">
-						<span class="block font-semibold"> Show activity while inactive </span>
+						<span class="block font-semibold">Display game playtime</span>
 						<span class="mt-0.5 block text-sm opacity-65">
-							Keep an "Online" activity on Discord while you're on your Switch but not playing
-							anything.
+							Adds your current game's playtime to your activity. This will not display if you
+							haven't played recently, or if the game has other details to show.
 						</span>
 					</span>
 
 					<input
 						type="checkbox"
 						class="toggle toggle-primary"
-						checked={presenceSession?.showWhenInactive ?? false}
+						checked={presenceSession?.showPlaytime ?? true}
 						onchange={(event) => {
-							setHiddenFlag(showWhenInactiveHidden, event.currentTarget.checked);
+							setHiddenFlag(showPlaytimeHidden, event.currentTarget.checked);
 							event.currentTarget.form?.requestSubmit();
 						}}
 					/>
@@ -336,66 +351,54 @@
 			<div class="border-t border-base-300"></div>
 
 			<form method="POST" action="?/setSync" use:enhance={syncForm}>
-				<input
-					type="hidden"
-					name="showEShopButton"
-					value={presenceSession?.showEShopButton ? 'true' : 'false'}
-					bind:this={showEShopButtonHidden}
-				/>
-
-				<div class="flex items-center gap-4 p-5">
+				<label class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
 					<span class="min-w-0 flex-1">
-						<span class="block font-semibold"> Show eShop button </span>
+						<span class="block font-semibold">eShop Link(s)</span>
 						<span class="mt-0.5 block text-sm opacity-65">
-							Add a "View on the eShop" button to your activity.
+							Adds link(s) to your activity to view your game's eShop page.
 						</span>
 					</span>
 
-					<input
-						type="checkbox"
-						class="toggle toggle-primary"
-						checked={presenceSession?.showEShopButton ?? true}
-						onchange={(event) => {
-							setHiddenFlag(showEShopButtonHidden, event.currentTarget.checked);
-							event.currentTarget.form?.requestSubmit();
-						}}
-					/>
-				</div>
+					<select
+						class="select w-full sm:w-48"
+						name="eShopButton"
+						value={presenceSession?.eShopButton ?? 'both'}
+						onchange={(event) => event.currentTarget.form?.requestSubmit()}
+					>
+						{#each eShopButtonOptions as option (option.value)}
+							<option value={option.value}>{option.label}</option>
+						{/each}
+					</select>
+				</label>
 			</form>
 
 			<div class="border-t border-base-300"></div>
 
 			<form method="POST" action="?/setSync" use:enhance={syncForm}>
-				<input
-					type="hidden"
-					name="showFriendCodeButton"
-					value={presenceSession?.showFriendCodeButton ? 'true' : 'false'}
-					bind:this={showFriendCodeButtonHidden}
-				/>
-
-				<div class="flex items-center gap-4 p-5">
+				<label class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
 					<span class="min-w-0 flex-1">
-						<span class="block font-semibold"> Show Friend Code button </span>
+						<span class="block font-semibold">Friend Link(s)</span>
 						<span class="mt-0.5 block text-sm opacity-65">
-							Add a "Send Friend Request" button linking to your friend code.
+							Adds link(s) to your activity to add you as a friend via the Nintendo Switch App.
 						</span>
 					</span>
 
-					<input
-						type="checkbox"
-						class="toggle toggle-primary"
-						checked={presenceSession?.showFriendCodeButton ?? false}
-						onchange={(event) => {
-							setHiddenFlag(showFriendCodeButtonHidden, event.currentTarget.checked);
-							event.currentTarget.form?.requestSubmit();
-						}}
-					/>
-				</div>
+					<select
+						class="select w-full sm:w-48"
+						name="friendButton"
+						value={presenceSession?.friendButton ?? 'both'}
+						onchange={(event) => event.currentTarget.form?.requestSubmit()}
+					>
+						{#each friendButtonOptions as option (option.value)}
+							<option value={option.value}>{option.label}</option>
+						{/each}
+					</select>
+				</label>
 			</form>
 
 			<div class="border-t border-base-300"></div>
 
-			{#if !presenceSession?.enabled}
+			{#if !presenceEnabled}
 				<div></div>
 			{:else if presence == null}
 				<div class="p-5">

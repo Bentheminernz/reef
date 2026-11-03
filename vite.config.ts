@@ -24,7 +24,8 @@ export default defineConfig({
 		sentrySvelteKit({
 			org: 'reef-2s',
 			project: 'javascript-sveltekit',
-			release: { name: commit }
+			release: { name: commit },
+			telemetry: false
 		}),
 		tailwindcss(),
 		sveltekit({

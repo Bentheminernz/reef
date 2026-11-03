@@ -116,7 +116,13 @@ async function syncBot(bot: SystemBot, applicationId: string, summary: RunSummar
 		.from(presenceSessions)
 		.innerJoin(discordLinks, eq(presenceSessions.discordLinkId, discordLinks.id))
 		.innerJoin(nintendoAccount, eq(discordLinks.nintendoAccountId, nintendoAccount.id))
-		.where(and(eq(presenceSessions.enabled, true), eq(nintendoAccount.systemBotUserId, bot.id)));
+
+		.where(
+			and(
+				inArray(presenceSessions.presenceMode, ['always', 'in_game']),
+				eq(nintendoAccount.systemBotUserId, bot.id)
+			)
+		);
 
 	const friendCodes = new Map<string, typeof friendCodeData.$inferSelect>();
 
@@ -157,9 +163,10 @@ async function syncBot(bot: SystemBot, applicationId: string, summary: RunSummar
 					session.platform,
 					friendCode?.friendCodeURL,
 					{
-						showWhenInactive: session.showWhenInactive,
-						showEShopButton: session.showEShopButton,
-						showFriendCodeButton: session.showFriendCodeButton
+						showWhenInactive: session.presenceMode == 'always',
+						eShopButton: session.eShopButton,
+						friendCodeButton: session.friendButton,
+						showPlaytime: session.showPlaytime
 					}
 				);
 

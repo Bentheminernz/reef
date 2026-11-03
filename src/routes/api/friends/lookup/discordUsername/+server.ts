@@ -1,6 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { discordLinks, nintendoAccount } from '$lib/server/db/schema';
 import { getCoralApi, getCoralFriends, getSystemBotCoralApi } from '$lib/server/coral';
@@ -37,7 +37,12 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		})
 		.from(discordLinks)
 		.innerJoin(nintendoAccount, eq(discordLinks.nintendoAccountId, nintendoAccount.id))
-		.where(sql`lower(${discordLinks.discordUsername}) = ${username.toLowerCase()}`)
+        .where(
+            and(
+                sql`lower(${discordLinks.discordUsername}) = ${username.toLowerCase()}`,
+                eq(nintendoAccount.allowDiscordUsernameSearching, true)
+            )
+        )
 		.limit(1);
 
 	if (link?.nsaId == null) {

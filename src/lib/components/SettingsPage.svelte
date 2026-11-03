@@ -99,6 +99,8 @@
 				>Bluesky</a
 			>.
 			<br /><br />
+			And Ellie (alongside other nxapi contributors) for nxapi and nxapi-auth! Without her hard work none of this would be possible
+			<br /><br />
 			And of course, thanks to my
 			<a href="https://github.com/sponsors/bentheminernz" target="_blank" class="link"
 				>GitHub Sponsors</a
