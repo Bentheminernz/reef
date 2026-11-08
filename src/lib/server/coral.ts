@@ -1,6 +1,7 @@
 import { decodeJwt } from 'jose';
 import { and, eq } from 'drizzle-orm';
 import CoralApi, {
+    Coral,
 	type Announcements_4,
 	type CoralAuthData,
 	type Friends_4,
@@ -18,6 +19,7 @@ import { logDataAccess } from '$lib/server/dataAccess';
 import type { GameService } from '$lib/types/game-services';
 import SplatNet3Api, { type SplatNet3AuthData, SplatNet3ErrorResponse } from 'nxapi/splatnet3';
 import cached from '$lib/utils/cached';
+import { getCoralConfig } from '$lib/server/nxapi-config';
 
 type NintendoAccount = typeof nintendoAccount.$inferSelect;
 type SplatnetBotAccount = typeof systemBotUser.$inferSelect;
@@ -515,7 +517,12 @@ async function createCoralApi(
 
 	const track = (client: CoralApi) => trackCoralAccess(client, options);
 
-	if (account.coralAuthData) {
+	// (for future reference), it seems if the znca_version changes then you cannot
+	// refresh the tokens, and you must make a new coral auth instance
+	if (
+		account.coralAuthData &&
+		account.coralAuthData.znca_version === (await getCoralConfig())?.znca_version
+	) {
 		authData = account.coralAuthData;
 		coral = track(CoralApi.createWithSavedToken(authData));
 
