@@ -7,6 +7,11 @@ import type {
 
 export type NotificationOperationContents = AnnouncementOperationContents & {
 	isFeatured?: boolean;
+	featuredImageUri?: {
+		medium: string;
+		large: string;
+		xlarge: string;
+	};
 	isWebView?: boolean;
 	webViewUri?: string;
 };

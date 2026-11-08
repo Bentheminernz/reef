@@ -1,4 +1,6 @@
 import { error } from '@sveltejs/kit';
+import { dev } from '$app/environment';
+import { resolve } from '$app/paths';
 import sanitizeHtml from 'sanitize-html';
 import type { RequestHandler } from './$types';
 
@@ -26,27 +28,33 @@ export const GET: RequestHandler = async ({ locals, url, fetch }) => {
 		throw error(400, 'Unsupported announcement URL');
 	}
 
-	const appVersion = '3.5.0';
+	const appVersion = locals.nintendoAccount.coralAuthData?.znca_version;
+	if (!appVersion) {
+		throw error(503, 'Nintendo Switch app version is unavailable. Please sign in again.');
+	}
+
 	const upstream = await fetch(parsed, {
 		headers: {
-			'user-agent': `com.nintendo.znca/${appVersion}(iOS/27.2) WebView`,
-			accept: 'text/html,application/xhtml+xml'
+			'User-Agent': `com.nintendo.znca/${appVersion}(iOS/27.2) WebView`,
+			Accept: 'text/html,application/xhtml+xml'
 		},
 		signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
-	}).catch(() => null);
+	})
 
 	if (!upstream) {
 		throw error(502, 'Could not load announcement');
 	}
 
+	const text = await upstream.text();
+
 	if (!upstream.ok) {
 		throw error(upstream.status, 'Could not load announcement');
 	}
 
-	return new Response(stripTracking(await upstream.text(), parsed.href), {
+	return new Response(stripTracking(text, parsed.href), {
 		headers: {
 			'content-type': 'text/html; charset=utf-8',
-			'cache-control': 'private, max-age=3600',
+			'cache-control': dev ? 'no-store' : 'private, max-age=3600',
 			'content-security-policy': "script-src 'none'; object-src 'none'; frame-ancestors 'self'",
 			'x-content-type-options': 'nosniff',
 			'X-Hello': 'Hello there snooper. This HTML was stripped by ben :)'
@@ -62,17 +70,37 @@ function stripTracking(html: string, baseUrl: string): string {
 		exclusiveFilter: (frame) => frame.tag === 'script',
 		transformTags: {
 			a: (tagName, attribs) => {
+				let isGameService = false;
 				if (attribs.href) {
-					attribs.href = new URL(attribs.href, baseUrl).href;
+					try {
+						const link = new URL(attribs.href, baseUrl);
+						const game = link.pathname.match(/^\/game\/(\d{1,16})\/?$/);
+						if (
+							link.protocol === 'com.nintendo.znca:' &&
+							link.host === 'znca' &&
+							!link.username &&
+							!link.password &&
+							game !== null &&
+							Number.isSafeInteger(Number(game[1]))
+						) {
+							attribs.href = `${resolve('/')}?gameService=${game[1]}`;
+							isGameService = true;
+						} else {
+							attribs.href = link.href;
+						}
+					} catch {
+						delete attribs.href;
+					}
 				}
 
 				return {
 					tagName,
 					attribs: {
 						...attribs,
-						target: '_blank',
+						target: isGameService ? '_top' : '_blank',
 						rel: 'noopener noreferrer'
-					}
+					},
+					...(isGameService ? { text: 'Open in Reef' } : {})
 				};
 			}
 		}

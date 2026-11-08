@@ -67,7 +67,7 @@ export const load = (async ({ locals, depends, isDataRequest, url }) => {
 				};
 			})
 		)
-	);
+    );
 
 	const registeredPasskeys = await db
 		.select({

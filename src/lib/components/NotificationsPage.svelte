@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { invalidate } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import Info from '@lucide/svelte/icons/info';
 	import Newspaper from '@lucide/svelte/icons/newspaper';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Wrench from '@lucide/svelte/icons/wrench';
 	import type { CoralSvelteNotice, Notification } from '$lib/types/notifications';
+	import { page } from '$app/state';
 
 	let {
 		notifications,
@@ -47,7 +48,6 @@
 		}
 	});
 
-	// Lock page scroll while the dialog is open.
 	$effect(() => {
 		if (!modalOpen) return;
 
@@ -58,8 +58,24 @@
 		};
 	});
 
+	$effect(() => {
+	    const pop = page.url.searchParams.get('pop');
+
+		if (pop && notifications.find((n) => n.id == pop)) {
+		    selectedNotification = notifications.find((n) => n.id == pop);
+			modalOpen = true
+		}
+	});
+
 	async function handleClose() {
 		modalOpen = false;
+
+		if (page.url.searchParams.has('pop')) {
+			const url = new URL(page.url);
+			url.searchParams.delete('pop');
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
+			await goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+		}
 
 		const notification = selectedNotification;
 		const notice = selectedNotice;
@@ -218,7 +234,7 @@
 				<iframe
 					src={webviewSrc}
 					title=""
-					sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+					sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
 					class="mt-4 h-[70vh] w-full rounded-xl bg-base-100"
 				></iframe>
 			{:else}

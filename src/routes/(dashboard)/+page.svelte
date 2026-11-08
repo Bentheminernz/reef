@@ -8,7 +8,9 @@
 	import GWSSkeleton from '$lib/components/Skeletons/GWSSkeleton.svelte';
 	import MediaSkeleton from '$lib/components/Skeletons/MediaSkeleton.svelte';
 	import { fade } from 'svelte/transition';
+	import type { NotificationOperation } from '$lib/types/notifications';
 	import type { PageProps } from './$types';
+	import { resolve } from '$app/paths';
 
 	let { data }: PageProps = $props();
 
@@ -27,6 +29,22 @@
 		mediaModalOpen = true;
 	}
 </script>
+
+{#await data.notifications then notifications}
+	{@const featured = notifications.find(
+		(n): n is NotificationOperation => n.type === 'OPERATION' && n.operation.isFeatured === true
+	)}
+
+	{#if featured}
+		{#if featured.operation.featuredImageUri?.medium}
+    		<a href="{resolve(`/notifications?pop=${featured.id}`)}">
+    			<img src={featured.operation.featuredImageUri.xlarge} class="rounded-xl mb-4" alt={featured.title} />
+    		</a>
+		{/if}
+	{/if}
+{:catch error}
+	<p>{error}</p>
+{/await}
 
 <h1 class="text-xl font-bold">Friends</h1>
 <div class="grid">

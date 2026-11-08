@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { base } from '$app/paths';
-	import { onDestroy } from 'svelte';
+	import { replaceState } from '$app/navigation';
+	import { page } from '$app/state';
+	import { onDestroy, tick } from 'svelte';
 	import type { GameService, GameServiceSession } from '$lib/types/game-services';
 
 	interface Props {
@@ -13,11 +15,38 @@
 	let frameUrl = $state('');
 	let frame: HTMLIFrameElement | undefined = $state();
 	let launchError = $state('');
+	let requestedServiceError = $state('');
 	let phase = $state<'idle' | 'connecting' | 'loading' | 'active'>('idle');
 	let launchEpoch = 0;
 	let controller: AbortController | null = null;
 	let loadingTimer: ReturnType<typeof setTimeout> | undefined;
 	let renewal: Promise<string | null> | null = null;
+
+	$effect(() => {
+		const serviceId = page.url.searchParams.get('gameService');
+		if (!serviceId) return;
+
+		const service = services.find((item) => String(item.id) === serviceId);
+		const url = new URL(page.url);
+		url.searchParams.delete('gameService');
+
+		let cancelled = false;
+
+		void tick().then(() => {
+			if (cancelled) return;
+
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
+			replaceState(url, page.state);
+			requestedServiceError = service
+				? ''
+				: 'This game service is not available for your Nintendo Account.';
+			if (service) void launchService(service);
+		});
+
+		return () => {
+			cancelled = true;
+		};
+	});
 
 	$effect(() => {
 		if (!activeService) return;
@@ -263,6 +292,10 @@
 		}
 	}
 </script>
+
+{#if requestedServiceError}
+	<p role="alert" class="mb-4 rounded-xl bg-base-200 p-4 text-sm">{requestedServiceError}</p>
+{/if}
 
 {#if services.length === 0}
 	<p class="rounded-xl bg-base-200 p-4 text-sm text-base-content/70">
