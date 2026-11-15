@@ -345,7 +345,9 @@
 	}
 </script>
 
-<header class="flex items-center justify-between">
+<header
+	class="sticky top-0 z-40 -mx-4 -mt-4 flex items-center justify-between px-4 pt-4 before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:-bottom-6 before:-z-10 before:bg-base-100/80 before:mask-[linear-gradient(to_bottom,black_calc(100%-1.5rem),transparent)] before:backdrop-blur-md"
+>
 	<div
 		class="z-40 flex max-w-56 items-center gap-2 rounded-full bg-red-600 p-1.5 pr-2 text-white shadow-md ring-1 ring-base-300"
 	>
@@ -421,7 +423,7 @@
 	</div>
 </header>
 
-<div class="relative min-h-[calc(100dvh-5rem)] overflow-hidden">
+<div class="relative min-h-[calc(100dvh-5rem)] overflow-hidden mt-4">
 	<div class="dashboard-content pb-32 sm:pb-40 lg:pb-48" class:tab-changing={changingTab}>
 		{@render children?.()}
 	</div>

@@ -22,7 +22,6 @@ import type { NintendoAccountSessionToken } from 'nxapi/nintendo-account';
 const FRIEND_LIMIT = 300;
 export const MAX_ACCOUNTS_PER_SYSTEM_BOT = FRIEND_LIMIT;
 
-const RECEIVER_FRIEND_LIMIT_EXCEEDED = 9462;
 const NSA_NOT_LINKED = CoralStatus.NSA_NOT_LINKED;
 
 const PERMISSIONS_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -263,9 +262,19 @@ export async function ensureBotFriendship(account: NintendoAccount): Promise<Bot
 				}
 
 				const botCoral = await getSystemBotCoralApi(systemBot.id);
-				await botCoral.sendFriendRequest(userLookUp.nsaId);
+				try {
+					await botCoral.sendFriendRequest(userLookUp.nsaId);
+				} catch (error) {
+					if (!(error instanceof CoralErrorResponse) || error.status !== CoralStatus.ALREADY_FRIEND) {
+						throw error;
+					}
 
-				accepted = await acceptBotRequestWithRetry(userCoral, systemBot.nsaId);
+					accepted = true;
+				}
+
+				if (!accepted) {
+					accepted = await acceptBotRequestWithRetry(userCoral, systemBot.nsaId);
+				}
 
 				if (!accepted) {
 					console.error(`Friend request from system bot ${systemBot.naId} not found after sending`);
@@ -311,7 +320,7 @@ export async function ensureBotFriendship(account: NintendoAccount): Promise<Bot
 
 			return 'complete';
 		} catch (error) {
-			if (error instanceof CoralErrorResponse && error.status === RECEIVER_FRIEND_LIMIT_EXCEEDED) {
+			if (error instanceof CoralErrorResponse && error.status === CoralStatus.RECEIVER_FRIEND_LIMIT_EXCEEDED) {
 				sawFullBot = true;
 				console.warn(`System bot ${systemBot.naId} is full, trying another`);
 				continue;
@@ -409,7 +418,13 @@ async function acceptBotRequestIfPresent(userCoral: CoralApi, botNsaId: string):
 
 	if (!botRequest) return false;
 
-	await userCoral.acceptFriendRequest(botRequest.id);
+	try {
+		await userCoral.acceptFriendRequest(botRequest.id);
+	} catch (error) {
+		if (!(error instanceof CoralErrorResponse) || error.status !== CoralStatus.ALREADY_FRIEND) {
+			throw error;
+		}
+	}
 	return true;
 }
 
@@ -540,13 +555,6 @@ export async function retryBotFriendship(nintendoAccountId: string): Promise<Bot
 	return status;
 }
 
-/**
- * Removes the system bot friendship for an account, trying the user side first and
- * falling back to removing the user from the bot's friend list.
- *
- * Returns false only when a bot friendship exists and neither side could be unfriended.
- * Callers that need to guarantee cleanup (e.g. account deletion) should check the result.
- */
 export async function removeBotFriendship(account: NintendoAccount): Promise<boolean> {
 	let unfriended = true;
 

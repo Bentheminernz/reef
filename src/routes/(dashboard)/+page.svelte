@@ -38,7 +38,21 @@
 	{#if featured}
 		{#if featured.operation.featuredImageUri?.medium}
     		<a href="{resolve(`/notifications?pop=${featured.id}`)}">
-    			<img src={featured.operation.featuredImageUri.xlarge} class="rounded-xl mb-4" alt={featured.title} />
+       			<picture>
+            <source
+              media="(min-width: 1024px)"
+              srcset={featured.operation.featuredImageUri.xlarge}
+            />
+            <source
+              media="(min-width: 768px)"
+              srcset={featured.operation.featuredImageUri.large}
+            />
+            <img
+              src={featured.operation.featuredImageUri.medium}
+              class="rounded-xl mb-4"
+              alt={featured.title}
+            />
+          </picture>
     		</a>
 		{/if}
 	{/if}

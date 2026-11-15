@@ -112,7 +112,7 @@ export function buildDiscordActivity(
 		const buttons: NonNullable<DiscordActivity['buttons']> = [];
 
 		if (['btn', 'both'].includes(eShopButton)) {
-			buttons.push({ label: 'View on the eShop', url: gameUri });
+			buttons.push({ label: 'Nintendo eShop', url: gameUri });
 		}
 
 		if (['game_icon', 'both'].includes(eShopButton) && activity.assets?.large_image != null) {
@@ -120,7 +120,7 @@ export function buildDiscordActivity(
 		}
 
 		if (['btn', 'both'].includes(friendCodeButton) && friendCodeURI) {
-			buttons.push({ label: 'Send Friend Request', url: friendCodeURI });
+			buttons.push({ label: 'Friend Request', url: friendCodeURI });
 		}
 
 		if (
@@ -158,7 +158,7 @@ export function buildDiscordActivity(
 		if (['btn', 'both'].includes(friendCodeButton) && friendCodeURI) {
 			activity.buttons = [
 				{
-					label: 'Send Friend Request',
+					label: 'Friend Request',
 					url: friendCodeURI
 				}
 			];
