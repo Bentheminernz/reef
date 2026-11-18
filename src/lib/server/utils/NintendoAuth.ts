@@ -22,8 +22,6 @@ import type { NintendoAccountSessionToken } from 'nxapi/nintendo-account';
 const FRIEND_LIMIT = 300;
 export const MAX_ACCOUNTS_PER_SYSTEM_BOT = FRIEND_LIMIT;
 
-const NSA_NOT_LINKED = CoralStatus.NSA_NOT_LINKED;
-
 const PERMISSIONS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export type BotFriendshipStatus =
@@ -57,10 +55,6 @@ export class NintendoSwitchNotLinkedError extends Error {
 		super("This account isn't linked to a Nintendo Switch console.");
 		this.name = 'NintendoSwitchNotLinkedError';
 	}
-}
-
-function isNsaNotLinkedError(error: unknown): boolean {
-	return error instanceof CoralErrorResponse && error.status === NSA_NOT_LINKED;
 }
 
 function getSubFromSessionToken(sessionToken: string): string {
@@ -649,7 +643,7 @@ export async function loginWithSessionToken(sessionToken: string, code: string) 
 	try {
 		await getCoralApi(account);
 	} catch (error) {
-		if (!isNsaNotLinkedError(error)) throw error;
+	    if (!(error instanceof CoralErrorResponse && error.status === CoralStatus.NSA_NOT_LINKED)) throw error;
 
 		if (createdAccount) {
 			await db.delete(nintendoAccount).where(eq(nintendoAccount.id, account.id));
