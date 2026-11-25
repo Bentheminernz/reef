@@ -33,6 +33,7 @@ setDefaultAutoSelectFamilyAttemptTimeout(1000);
 const INTERVAL_MS = 30_000;
 const INTERVAL_JITTER_MS = 10_000;
 const SESSION_EXPIRY_MS = 15 * 60 * 1000;
+const LAST_SYNCED_BATCH_SIZE = 500;
 
 const SYNC_CONCURRENCY = Math.max(1, Number(process.env.PRESENCE_SYNC_CONCURRENCY ?? 8) || 8);
 const BOT_CONCURRENCY = Math.max(1, Number(process.env.PRESENCE_BOT_CONCURRENCY ?? 4) || 4);
@@ -142,6 +143,8 @@ async function syncBot(bot: SystemBot, applicationId: string, summary: RunSummar
 		}
 	}
 
+	const unchangedIds: string[] = [];
+
 	await forEachWithConcurrency(
 		sessions,
 		SYNC_CONCURRENCY,
@@ -186,10 +189,19 @@ async function syncBot(bot: SystemBot, applicationId: string, summary: RunSummar
 						)
 					: session.startedAt;
 
-				await db
-					.update(presenceSessions)
-					.set({ presence, startedAt: activityStartedAt, lastSyncedAt: new Date() })
-					.where(eq(presenceSessions.id, session.id));
+				const rowChanged =
+					session.presence == null ||
+					JSON.stringify(session.presence) !== JSON.stringify(presence) ||
+					session.startedAt.getTime() !== activityStartedAt.getTime();
+
+				if (rowChanged) {
+					await db
+						.update(presenceSessions)
+						.set({ presence, startedAt: activityStartedAt, lastSyncedAt: new Date() })
+						.where(eq(presenceSessions.id, session.id));
+				} else {
+					unchangedIds.push(session.id);
+				}
 
 				if (activity != null && monitors.length > 0) {
 					activity = await applyActivityCallbacks(monitors, activity, {
@@ -249,6 +261,13 @@ async function syncBot(bot: SystemBot, applicationId: string, summary: RunSummar
 			}
 		}
 	);
+
+	for (let i = 0; i < unchangedIds.length; i += LAST_SYNCED_BATCH_SIZE) {
+		await db
+			.update(presenceSessions)
+			.set({ lastSyncedAt: new Date() })
+			.where(inArray(presenceSessions.id, unchangedIds.slice(i, i + LAST_SYNCED_BATCH_SIZE)));
+	}
 }
 
 const applicationId = process.env.DISCORD_CLIENT_ID;
